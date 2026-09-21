@@ -1,0 +1,13 @@
+{
+  "name": "미래노트",
+  "short_name": "미래노트",
+  "description": "투자 영상·자료를 요점·인사이트·적용안으로 정리",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#fafaf9",
+  "theme_color": "#0d9488",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

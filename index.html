@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>미래노트</title>
+<meta name="theme-color" content="#0d9488" />
+<link rel="icon" href="icon.png" />
+<link rel="apple-touch-icon" href="icon.png" />
+<link rel="manifest" href="manifest.json" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="미래노트" />
+<style>
+  :root{ --ink:#18181b; --sub:#71717a; --line:#e4e4e7; --bg:#fafaf9; --card:#fff; --soft:#f4f4f5;
+         --accent:#0d9488; --accent-bg:#f0fdfa; --accent-bd:#99f6e4;
+         --apply:#16a34a; --review:#d97706; --ref:#71717a; }
+  @media (prefers-color-scheme: dark){
+    :root{ --ink:#f4f4f5; --sub:#a1a1aa; --line:#3f3f46; --bg:#18181b; --card:#232326; --soft:#2e2e33;
+           --accent:#2dd4bf; --accent-bg:#0f2e2a; --accent-bd:#155e56; }
+    input,textarea{ background:#2e2e33 !important; }
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+        font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
+  .wrap{ max-width:520px; margin:0 auto; padding:18px 14px 60px; }
+  h1{ font-size:22px; font-weight:800; letter-spacing:-.02em; margin:0 0 2px; }
+  .lead{ font-size:13px; color:var(--sub); margin:0 0 16px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:10px; }
+  label{ display:block; font-size:12px; color:var(--sub); margin:0 0 4px; }
+  input,textarea{ width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+        font-size:15px; background:#fff; color:var(--ink); outline:none; font-family:inherit; }
+  input:focus,textarea:focus{ border-color:var(--accent); }
+  textarea{ resize:vertical; min-height:52px; }
+  .field{ margin-bottom:10px; }
+  .btn{ border:1px solid var(--line); background:var(--soft); color:var(--ink); border-radius:9px;
+        padding:9px 12px; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.block{ width:100%; }
+  .btn.sm{ padding:5px 9px; font-size:12px; }
+  .row{ display:flex; gap:8px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip{ border:1px solid var(--line); background:var(--card); color:var(--sub); border-radius:999px;
+         padding:5px 11px; font-size:13px; cursor:pointer; user-select:none; }
+  .chip.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .chip.cat.on{ background:var(--accent-bg); color:var(--accent); border-color:var(--accent-bd); }
+  .seg{ display:flex; gap:6px; }
+  .seg button{ flex:1; border:1px solid var(--line); background:var(--card); color:var(--sub);
+        border-radius:9px; padding:8px; font-size:13px; font-weight:600; cursor:pointer; }
+  .seg button.apply.on{ background:#f0fdf4; border-color:#bbf7d0; color:var(--apply); }
+  .seg button.review.on{ background:#fffbeb; border-color:#fde68a; color:var(--review); }
+  .seg button.ref.on{ background:#f4f4f5; border-color:#e4e4e7; color:var(--ref); }
+  .stars{ font-size:22px; letter-spacing:3px; cursor:pointer; user-select:none; color:#d4d4d8; }
+  .stars .on{ color:#f59e0b; }
+  .thumb{ width:100%; border-radius:10px; display:block; aspect-ratio:16/9; object-fit:cover; background:var(--soft); }
+  .thumb.sm{ width:104px; flex:0 0 104px; aspect-ratio:16/9; }
+  .note{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:10px; border-left-width:4px; }
+  .note.apply{ border-left-color:var(--apply); }
+  .note.review{ border-left-color:var(--review); }
+  .note.ref{ border-left-color:var(--ref); }
+  .note-top{ display:flex; gap:10px; padding:10px; cursor:pointer; }
+  .note-body{ min-width:0; flex:1; }
+  .note-title{ font-size:15px; font-weight:600; line-height:1.35; margin:0 0 4px;
+        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .badge{ display:inline-block; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; }
+  .badge.apply{ background:#f0fdf4; color:var(--apply); }
+  .badge.review{ background:#fffbeb; color:var(--review); }
+  .badge.ref{ background:#f4f4f5; color:var(--ref); }
+  .meta{ display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-top:5px; }
+  .tag{ font-size:11px; color:var(--accent); background:var(--accent-bg); border:1px solid var(--accent-bd);
+        border-radius:5px; padding:1px 6px; }
+  .det{ border-top:1px solid var(--line); padding:10px 12px; font-size:13.5px; line-height:1.6; }
+  .det h4{ margin:8px 0 2px; font-size:12px; color:var(--sub); font-weight:700; }
+  .det p{ margin:0; white-space:pre-wrap; }
+  .det .acts{ display:flex; gap:8px; margin-top:10px; }
+  .empty{ text-align:center; color:var(--sub); font-size:13px; padding:30px 0; }
+  .count{ font-size:12px; color:var(--sub); margin:4px 2px 8px; }
+  .foot{ text-align:center; font-size:11px; color:var(--sub); margin-top:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>미래노트</h1>
+  <p class="lead">투자 영상·자료를 담고 → 요점·인사이트·적용안으로 정리. 지금 보고, 미래에 적용.</p>
+
+  <button id="openAdd" class="btn primary block" style="margin-bottom:12px">+ 새 노트 추가</button>
+
+  <div class="card" id="form" style="display:none">
+    <div class="field">
+      <label>링크 (유튜브·기사 등)</label>
+      <div class="row">
+        <input id="n_url" type="url" inputmode="url" placeholder="https://..." />
+        <button class="btn" id="fetchBtn" style="flex:0 0 auto">불러오기</button>
+      </div>
+      <div id="fetchMsg" style="font-size:11px;color:var(--sub);margin-top:4px"></div>
+    </div>
+    <img id="n_thumb" class="thumb" style="display:none;margin-bottom:10px" />
+    <div class="field"><label>제목</label><input id="n_title" type="text" placeholder="영상/자료 제목" /></div>
+    <div class="field">
+      <label>카테고리 (여러 개 선택)</label>
+      <div class="chips" id="catPick"></div>
+    </div>
+    <div class="field">
+      <label>중요도</label>
+      <div class="stars" id="starPick" data-v="0"><span data-i="1">★</span><span data-i="2">★</span><span data-i="3">★</span></div>
+    </div>
+    <div class="field"><label>3줄 요점</label><textarea id="n_summary" placeholder="핵심 3줄"></textarea></div>
+    <div class="field"><label>인사이트</label><textarea id="n_insight" placeholder="내가 얻은 인사이트"></textarea></div>
+    <div class="field"><label>실제 적용안 (액션)</label><textarea id="n_action" placeholder="내 투자/일에 이렇게 적용"></textarea></div>
+    <div class="field">
+      <label>적용 상태</label>
+      <div class="seg" id="statusPick">
+        <button data-s="apply" class="apply">🟢 적용</button>
+        <button data-s="review" class="review on">🟡 적용 검토</button>
+        <button data-s="ref" class="ref">⚪ 단순 참고</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary block" id="saveBtn">저장</button>
+      <button class="btn" id="cancelBtn" style="flex:0 0 auto">취소</button>
+    </div>
+  </div>
+
+  <div class="field"><input id="search" type="text" placeholder="🔎 제목·내용 검색" /></div>
+  <div class="chips" id="statusFilter" style="margin-bottom:6px">
+    <span class="chip on" data-s="all">전체</span>
+    <span class="chip" data-s="review">🟡 적용 검토</span>
+    <span class="chip" data-s="apply">🟢 적용</span>
+    <span class="chip" data-s="ref">⚪ 참고</span>
+  </div>
+  <div class="chips" id="catFilter" style="margin-bottom:6px"></div>
+  <div class="count" id="count"></div>
+
+  <div id="list"></div>
+
+  <div class="foot">데이터는 이 브라우저에만 저장돼요 (localStorage). 기기 바꾸면 안 넘어가니 중요한 건 따로 백업.</div>
+</div>
+
+<script>
+(function(){
+  var $=function(s){return document.querySelector(s);};
+  var CATS=['반도체','금리','환율','ETF','심리','기타'];
+  var KEY='miraenote:v1';
+  var notes=[], editingId=null, filter={status:'all',cat:'all',q:''};
+  var pick={cats:[], importance:0, status:'review', thumb:''};
+
+  function load(){ try{ notes=JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ notes=[]; } }
+  function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(notes)); }catch(e){} }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+  function esc(s){ return (s||'').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+  function ytId(url){ var m=String(url).match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
+
+  function renderCatPick(){ var c=$('#catPick'); c.innerHTML='';
+    CATS.forEach(function(cat){ var el=document.createElement('span');
+      el.className='chip cat'+(pick.cats.indexOf(cat)>=0?' on':''); el.textContent=cat;
+      el.onclick=function(){ var i=pick.cats.indexOf(cat); if(i>=0)pick.cats.splice(i,1); else pick.cats.push(cat); renderCatPick(); };
+      c.appendChild(el); }); }
+  function renderCatFilter(){ var c=$('#catFilter'); c.innerHTML='';
+    var all=document.createElement('span'); all.className='chip cat'+(filter.cat==='all'?' on':''); all.textContent='전체 분야';
+    all.onclick=function(){ filter.cat='all'; render(); }; c.appendChild(all);
+    CATS.forEach(function(cat){ var el=document.createElement('span');
+      el.className='chip cat'+(filter.cat===cat?' on':''); el.textContent=cat;
+      el.onclick=function(){ filter.cat=cat; render(); }; c.appendChild(el); }); }
+
+  function renderStars(){ var s=$('#starPick'); s.dataset.v=pick.importance;
+    [].forEach.call(s.children,function(sp){ sp.className = (parseInt(sp.dataset.i)<=pick.importance)?'on':''; }); }
+  $('#starPick').addEventListener('click',function(e){ if(e.target.dataset.i){ var v=parseInt(e.target.dataset.i);
+    pick.importance = (pick.importance===v)?v-1:v; renderStars(); } });
+
+  $('#statusPick').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b)return;
+    pick.status=b.dataset.s;
+    [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); }); });
+
+  function openForm(note){
+    $('#form').style.display=''; $('#openAdd').style.display='none';
+    if(note){ editingId=note.id;
+      $('#n_url').value=note.url||''; $('#n_title').value=note.title||'';
+      $('#n_summary').value=note.summary||''; $('#n_insight').value=note.insight||''; $('#n_action').value=note.action||'';
+      pick={cats:(note.cats||[]).slice(), importance:note.importance||0, status:note.status||'review', thumb:note.thumb||''};
+      if(note.thumb){ $('#n_thumb').src=note.thumb; $('#n_thumb').style.display=''; } else { $('#n_thumb').style.display='none'; }
+    } else { editingId=null;
+      $('#n_url').value=''; $('#n_title').value=''; $('#n_summary').value=''; $('#n_insight').value=''; $('#n_action').value='';
+      pick={cats:[], importance:0, status:'review', thumb:''}; $('#n_thumb').style.display='none';
+    }
+    $('#fetchMsg').textContent=''; renderCatPick(); renderStars();
+    [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function closeForm(){ $('#form').style.display='none'; $('#openAdd').style.display=''; editingId=null; }
+  $('#openAdd').onclick=function(){ openForm(null); };
+  $('#cancelBtn').onclick=closeForm;
+
+  $('#fetchBtn').onclick=function(){
+    var url=$('#n_url').value.trim(); if(!url){ $('#fetchMsg').textContent='링크를 먼저 넣어주세요.'; return; }
+    var id=ytId(url);
+    if(id){ pick.thumb='https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
+    $('#fetchMsg').textContent='제목 불러오는 중…';
+    fetch('https://noembed.com/embed?url='+encodeURIComponent(url)).then(function(r){return r.json();}).then(function(j){
+      if(j && j.title){ if(!$('#n_title').value) $('#n_title').value=j.title;
+        if(!pick.thumb && j.thumbnail_url){ pick.thumb=j.thumbnail_url; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
+        $('#fetchMsg').textContent='제목·썸네일 불러옴 ✓ (필요하면 수정하세요)';
+      } else { $('#fetchMsg').textContent='자동 불러오기 실패 — 제목을 직접 입력해주세요.'; }
+    }).catch(function(){ $('#fetchMsg').textContent='자동 불러오기 실패 — 제목을 직접 입력해주세요.'; });
+  };
+
+  $('#saveBtn').onclick=function(){
+    var title=$('#n_title').value.trim();
+    if(!title){ $('#fetchMsg').textContent='제목은 꼭 입력해주세요.'; $('#n_title').focus(); return; }
+    var data={ url:$('#n_url').value.trim(), title:title, thumb:pick.thumb,
+      cats:pick.cats.slice(), importance:pick.importance, status:pick.status,
+      summary:$('#n_summary').value.trim(), insight:$('#n_insight').value.trim(), action:$('#n_action').value.trim() };
+    if(editingId){ var n=notes.find(function(x){return x.id===editingId;}); if(n) Object.assign(n,data);
+    } else { data.id=uid(); data.createdAt=Date.now(); notes.unshift(data); }
+    persist(); closeForm(); render();
+  };
+
+  function del(id){ if(!confirm('이 노트를 삭제할까요?')) return; notes=notes.filter(function(x){return x.id!==id;}); persist(); render(); }
+
+  var STLABEL={apply:'적용',review:'적용 검토',ref:'참고'};
+  function render(){
+    var q=filter.q.toLowerCase();
+    var arr=notes.filter(function(n){
+      if(filter.status!=='all' && n.status!==filter.status) return false;
+      if(filter.cat!=='all' && (n.cats||[]).indexOf(filter.cat)<0) return false;
+      if(q){ var blob=((n.title||'')+' '+(n.summary||'')+' '+(n.insight||'')+' '+(n.action||'')).toLowerCase(); if(blob.indexOf(q)<0) return false; }
+      return true;
+    });
+    var order={review:0,apply:1,ref:2};
+    arr.sort(function(a,b){ if(order[a.status]!==order[b.status]) return order[a.status]-order[b.status];
+      if((b.importance||0)!==(a.importance||0)) return (b.importance||0)-(a.importance||0);
+      return (b.createdAt||0)-(a.createdAt||0); });
+
+    $('#count').textContent = '전체 '+notes.length+'개 · 보이는 '+arr.length+'개';
+    var L=$('#list'); L.innerHTML='';
+    if(arr.length===0){ L.innerHTML='<div class="empty">'+(notes.length===0?'첫 노트를 추가해보세요 👆':'조건에 맞는 노트가 없어요')+'</div>'; return; }
+
+    arr.forEach(function(n){
+      var el=document.createElement('div'); el.className='note '+n.status;
+      var stars=''; for(var i=1;i<=3;i++) stars+= (i<=(n.importance||0)?'★':'');
+      var tags=(n.cats||[]).map(function(c){return '<span class="tag">'+esc(c)+'</span>';}).join('');
+      var thumb=n.thumb?('<img class="thumb sm" src="'+esc(n.thumb)+'" onerror="this.style.display=\'none\'">'):'';
+      el.innerHTML=
+        '<div class="note-top">'+thumb+
+          '<div class="note-body">'+
+            '<span class="badge '+n.status+'">'+STLABEL[n.status]+'</span> '+
+            (stars?'<span style="color:#f59e0b;font-size:12px">'+stars+'</span>':'')+
+            '<div class="note-title">'+esc(n.title)+'</div>'+
+            '<div class="meta">'+tags+'</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="det" style="display:none">'+
+          (n.summary?'<h4>3줄 요점</h4><p>'+esc(n.summary)+'</p>':'')+
+          (n.insight?'<h4>인사이트</h4><p>'+esc(n.insight)+'</p>':'')+
+          (n.action?'<h4>실제 적용안</h4><p>'+esc(n.action)+'</p>':'')+
+          '<div class="acts">'+
+            (n.url?'<a class="btn sm" href="'+esc(n.url)+'" target="_blank" rel="noreferrer">▶ 열기</a>':'')+
+            '<button class="btn sm" data-edit="'+n.id+'">수정</button>'+
+            '<button class="btn sm" data-del="'+n.id+'">삭제</button>'+
+          '</div>'+
+        '</div>';
+      el.querySelector('.note-top').onclick=function(){ var d=el.querySelector('.det'); d.style.display = d.style.display==='none'?'':'none'; };
+      el.querySelector('[data-del="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); del(n.id); };
+      el.querySelector('[data-edit="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); openForm(n); };
+      L.appendChild(el);
+    });
+  }
+
+  $('#statusFilter').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c)return;
+    filter.status=c.dataset.s; [].forEach.call($('#statusFilter').children,function(x){x.classList.toggle('on',x===c);}); render(); });
+  $('#search').addEventListener('input',function(){ filter.q=this.value; render(); });
+
+  load(); renderCatFilter(); render();
+})();
+</script>
+</body>
+</html>
