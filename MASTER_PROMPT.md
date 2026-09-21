@@ -9,6 +9,7 @@
 ## 기술 구조
 - `index.html` 하나에 HTML+CSS(inline)+JS(vanilla). 외부 의존성 없음.
 - 데이터: 브라우저 `localStorage` (키 `miraenote:v1`).
+- **제미나이 API**(무료 키): 링크 넣고 자동정리 → generativelanguage.googleapis.com generateContent에 유튜브 URL(file_data.file_uri) + JSON 강제(responseMimeType). 키는 localStorage(miraenote:gk)에 저장(코드에 하드코딩 금지), 모델 GEMINI_MODEL, 맞춤맥락 MY_CONTEXT.
 - 링크 메타(제목/썸네일): 유튜브 ID → `img.youtube.com/vi/ID/hqdefault.jpg`(썸네일),
   제목은 `noembed.com/embed?url=...`(CORS 가능). 실패 시 수동 입력.
 - PWA: manifest.json + icon.png. 색 테마 = teal `#0d9488`.
