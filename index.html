@@ -84,6 +84,7 @@
   <p class="lead">투자 영상·자료를 담고 → 요점·인사이트·적용안으로 정리. 지금 보고, 미래에 적용.</p>
 
   <button id="openAdd" class="btn primary block" style="margin-bottom:12px">+ 새 노트 추가</button>
+  <div style="font-size:11px;color:var(--sub);margin:-6px 0 12px;text-align:center">💡 유튜브에서 <b>공유 → 미래노트</b> 하면 링크가 자동으로 들어와요 (홈 화면 추가 후)</div>
 
   <div class="card" id="form" style="display:none">
     <div class="field">
@@ -93,6 +94,10 @@
         <button class="btn" id="fetchBtn" style="flex:0 0 auto">불러오기</button>
       </div>
       <div id="fetchMsg" style="font-size:11px;color:var(--sub);margin-top:4px"></div>
+      <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn sm" id="sumBtn">📝 릴리스AI로 요약</button>
+        <span style="font-size:11px;color:var(--sub)">링크 복사됨 → 붙여넣고 요약 → 결과를 아래 요점에</span>
+      </div>
     </div>
     <img id="n_thumb" class="thumb" style="display:none;margin-bottom:10px" />
     <div class="field"><label>제목</label><input id="n_title" type="text" placeholder="영상/자료 제목" /></div>
@@ -187,6 +192,20 @@
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function closeForm(){ $('#form').style.display='none'; $('#openAdd').style.display=''; editingId=null; }
+  // 요약 도우미: 링크 복사 + 릴리스AI 열기
+  $('#sumBtn').onclick=function(){ var u=$('#n_url').value.trim();
+    if(u){ try{ navigator.clipboard.writeText(u); }catch(e){} }
+    window.open('https://lilys.ai/','_blank'); };
+  // 제목 키워드로 카테고리 자동 추천
+  function suggestCats(){ var t=($('#n_title').value||'').toLowerCase();
+    var map={ '반도체':['반도체','하이닉스','삼성전자','hbm','d램','엔비디아','nvidia','tsmc','마이크론','칩','soxx','sox'],
+      '금리':['금리','fomc','연준','기준금리','cpi','ppi','물가','인플레'],
+      '환율':['환율','달러','원달러','엔화','위안','원화'],
+      'ETF':['etf','s&p','나스닥','지수','인덱스','배당','qqq','spy'],
+      '심리':['심리','멘탈','공포','탐욕','습관','마인드'] };
+    Object.keys(map).forEach(function(cat){ if(pick.cats.indexOf(cat)>=0) return;
+      if(map[cat].some(function(k){return t.indexOf(k)>=0;})) pick.cats.push(cat); });
+    renderCatPick(); }
   $('#openAdd').onclick=function(){ openForm(null); };
   $('#cancelBtn').onclick=closeForm;
 
@@ -196,7 +215,7 @@
     if(id){ pick.thumb='https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
     $('#fetchMsg').textContent='제목 불러오는 중…';
     fetch('https://noembed.com/embed?url='+encodeURIComponent(url)).then(function(r){return r.json();}).then(function(j){
-      if(j && j.title){ if(!$('#n_title').value) $('#n_title').value=j.title;
+      if(j && j.title){ if(!$('#n_title').value) $('#n_title').value=j.title; suggestCats();
         if(!pick.thumb && j.thumbnail_url){ pick.thumb=j.thumbnail_url; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
         $('#fetchMsg').textContent='제목·썸네일 불러옴 ✓ (필요하면 수정하세요)';
       } else { $('#fetchMsg').textContent='자동 불러오기 실패 — 제목을 직접 입력해주세요.'; }
@@ -269,7 +288,20 @@
     filter.status=c.dataset.s; [].forEach.call($('#statusFilter').children,function(x){x.classList.toggle('on',x===c);}); render(); });
   $('#search').addEventListener('input',function(){ filter.q=this.value; render(); });
 
-  load(); renderCatFilter(); render();
+  // 유튜브 공유로 들어온 링크 자동 처리 (Web Share Target)
+  function handleShare(){
+    var p=new URLSearchParams(location.search);
+    var url=p.get('url')||'', text=p.get('text')||'', title=p.get('title')||'';
+    if(!url && text){ var m=text.match(/https?:\/\/[^\s]+/); if(m) url=m[0]; }
+    if(!url) return;
+    openForm(null);
+    $('#n_url').value=url;
+    if(title && !/https?:\/\//.test(title)) $('#n_title').value=title;
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    $('#fetchBtn').click();  // 제목·썸네일·카테고리 자동
+  }
+
+  load(); renderCatFilter(); render(); handleShare();
 })();
 </script>
 </body>
