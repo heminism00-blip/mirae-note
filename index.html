@@ -94,6 +94,8 @@
         <button class="btn" id="fetchBtn" style="flex:0 0 auto">불러오기</button>
       </div>
       <div id="fetchMsg" style="font-size:11px;color:var(--sub);margin-top:4px"></div>
+      <button class="btn block" id="sendLilys" style="margin-top:8px;background:var(--accent-bg);border-color:var(--accent-bd);color:var(--accent)">🔗 이 링크 릴리스AI로 보내기 (요약)</button>
+      <div style="font-size:11px;color:var(--sub);margin-top:4px">누르면 링크 복사 + 릴리스AI 열림 → 붙여넣기(꾹→붙여넣기) → 요약 → 결과를 아래 3줄 요점에</div>
     </div>
     <img id="n_thumb" class="thumb" style="display:none;margin-bottom:10px" />
     <div class="field"><label>제목</label><input id="n_title" type="text" placeholder="영상/자료 제목" /></div>
@@ -198,6 +200,15 @@
     Object.keys(map).forEach(function(cat){ if(pick.cats.indexOf(cat)>=0) return;
       if(map[cat].some(function(k){return t.indexOf(k)>=0;})) pick.cats.push(cat); });
     renderCatPick(); }
+  // 링크를 릴리스AI로 보내기: 복사 + 릴리스 열기
+  $('#sendLilys').onclick=function(){
+    var u=$('#n_url').value.trim();
+    if(!u){ $('#fetchMsg').textContent='링크를 먼저 넣어주세요.'; return; }
+    var done=false;
+    try{ navigator.clipboard.writeText(u).then(function(){ $('#fetchMsg').textContent='링크 복사됨 ✓ 릴리스에 붙여넣기(꾹 눌러 붙여넣기)'; }); done=true; }catch(e){}
+    if(!done) $('#fetchMsg').textContent='릴리스가 열려요 — 링크를 직접 붙여넣어 요약하세요.';
+    window.open('https://lilys.ai/','_blank');
+  };
   $('#openAdd').onclick=function(){ openForm(null); };
   $('#cancelBtn').onclick=closeForm;
 
