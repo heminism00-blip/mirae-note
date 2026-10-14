@@ -142,7 +142,7 @@
 <script>
 (function(){
   // ── 설정 (키는 저장소에 안 넣음! 앱 첫 사용 시 폰에만 저장) ──
-  const GEMINI_MODELS=["gemini-2.5-flash","gemini-2.5-flash-preview","gemini-3.5-flash","gemini-1.5-flash"]; // 순서대로 시도
+  const GEMINI_MODELS=["gemini-3.8-flash","gemini-3.5-flash","gemini-flash-latest"]; // 순서대로 시도
   const MY_CONTEXT="개인 투자자. 삼성전자·SK하이닉스·S&P500 ETF 보유, CORE(지수 적립)+ACTIVE(개별주 공부) 원칙.";
   var GK='miraenote:gk';
   function getKey(){ try{ return localStorage.getItem(GK)||''; }catch(e){ return ''; } }
