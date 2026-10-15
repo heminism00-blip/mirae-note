@@ -31,7 +31,7 @@
   input,textarea,select{ width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
         font-size:15px; background:#fff; color:var(--ink); outline:none; font-family:inherit; }
   input:focus,textarea:focus{ border-color:var(--accent); }
-  textarea{ resize:vertical; min-height:72px; line-height:1.5; }
+  textarea{ resize:vertical; min-height:96px; line-height:1.55; }
   .field{ margin-bottom:10px; }
   .btn{ border:1px solid var(--line); background:var(--soft); color:var(--ink); border-radius:9px;
         padding:9px 12px; font-size:14px; font-weight:600; cursor:pointer; }
@@ -106,6 +106,7 @@
     <div class="field"><label>3줄 요점 (한 줄에 하나)</label><textarea id="n_summary" placeholder="AI가 채우거나 직접 입력"></textarea></div>
     <div class="field"><label>인사이트</label><textarea id="n_insight" placeholder="얻은 인사이트"></textarea></div>
     <div class="field"><label>실제 적용안 (액션)</label><textarea id="n_action" placeholder="이렇게 적용"></textarea></div>
+    <div class="field"><label>📜 전체 내용 (AI 상세본)</label><textarea id="n_full" placeholder="AI가 영상 전체를 풀어서 정리" style="min-height:140px"></textarea></div>
     <div class="field"><label>적용 상태</label>
       <div class="seg" id="statusPick">
         <button data-s="apply" class="apply">🟢 적용</button>
@@ -191,10 +192,10 @@
     $('#form').style.display=''; $('#openAdd').style.display='none';
     if(note){ editingId=note.id;
       $('#n_url').value=note.url||''; $('#n_title').value=note.title||'';
-      $('#n_summary').value=note.summary||''; $('#n_insight').value=note.insight||''; $('#n_action').value=note.action||'';
+      $('#n_summary').value=note.summary||''; $('#n_insight').value=note.insight||''; $('#n_action').value=note.action||''; $('#n_full').value=note.full||'';
       pick={cats:(note.cats||[]).slice(), importance:note.importance||0, status:note.status||'review', thumb:note.thumb||''};
       if(note.thumb){ $('#n_thumb').src=note.thumb; $('#n_thumb').style.display=''; } else { $('#n_thumb').style.display='none'; }
-    } else { editingId=null; $('#n_url').value=''; $('#n_title').value=''; $('#n_summary').value=''; $('#n_insight').value=''; $('#n_action').value='';
+    } else { editingId=null; $('#n_url').value=''; $('#n_title').value=''; $('#n_summary').value=''; $('#n_insight').value=''; $('#n_action').value=''; $('#n_full').value='';
       pick={cats:[], importance:0, status:'review', thumb:''}; $('#n_thumb').style.display='none'; }
     $('#fetchMsg').textContent=''; $('#aiMsg').textContent=''; renderCatPick(); renderStars();
     [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); });
@@ -214,8 +215,9 @@
     $('#aiBtn').disabled=true; $('#aiMsg').textContent='AI가 영상 읽고 정리 중… (10~40초)';
     var vid=ytId(url); if(vid){ pick.thumb='https://img.youtube.com/vi/'+vid+'/hqdefault.jpg'; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
     var promptText='너는 영상 정리 도우미다. 아래 영상을 보고 JSON으로만 답하라(설명·마크다운·코드펜스 금지).\n사용자 맥락: '+MY_CONTEXT
+      +'\n문체 규칙: 모든 텍스트는 개조식(명사형 종결)으로 짧고 핵심만. "~습니다/~이다/~합니다" 금지. 예) "총자산 대비 손실액 통제". 핵심 공식·수치가 있으면 반드시 포함(예: 최대 손실액 = 총자산 × 1%).'
       +'\n카테고리는 반드시 다음 중에서 1~2개만 고른다: '+CATS.join(', ')
-      +'\n형식: {"title":"간결한 제목","categories":["위 목록 중 1~2개"],"importance":2,"summary":["핵심 요점 3개, 각 한 문장"],"insight":"얻을 인사이트 2~3문장","action":"실제 적용 액션 2~3개(줄바꿈)","status":"apply 또는 review 또는 ref 중 추천"}';
+      +'\n형식: {"title":"간결한 제목","categories":["위 목록 중 1~2개"],"importance":2,"summary":["핵심 요점 3~4개, 개조식 한 줄씩"],"insight":"핵심 인사이트, 개조식 2~3줄(줄바꿈)","action":"실제 적용 액션, 개조식 2~3개(줄바꿈)","full":"영상 전체 내용을 흐름대로 상세히 정리(개조식 불릿, 줄바꿈으로 구분, 수식/수치 포함)","status":"apply 또는 review 또는 ref 중 추천"}';
     try{
       var body=JSON.stringify({ contents:[{parts:[{text:promptText},{file_data:{file_uri:url}}]}], generationConfig:{responseMimeType:'application/json'} });
       var j=null, lastErr='';
@@ -234,6 +236,7 @@
       if(o.summary) $('#n_summary').value=Array.isArray(o.summary)?o.summary.join('\n'):o.summary;
       if(o.insight) $('#n_insight').value=o.insight;
       if(o.action) $('#n_action').value=Array.isArray(o.action)?o.action.join('\n'):o.action;
+      if(o.full) $('#n_full').value=Array.isArray(o.full)?o.full.join('\n'):o.full;
       if(typeof o.importance==='number'){ pick.importance=Math.max(0,Math.min(3,Math.round(o.importance))); renderStars(); }
       if(Array.isArray(o.categories)){ o.categories.forEach(function(c){ if(CATS.indexOf(c)>=0 && pick.cats.indexOf(c)<0) pick.cats.push(c); }); renderCatPick(); }
       if(o.status && ['apply','review','ref'].indexOf(o.status)>=0){ pick.status=o.status; [].forEach.call($('#statusPick').children,function(x){x.classList.toggle('on',x.dataset.s===pick.status);}); }
@@ -258,7 +261,7 @@
     var title=$('#n_title').value.trim();
     if(!title){ $('#aiMsg').textContent='제목은 꼭 입력해주세요.'; $('#n_title').focus(); return; }
     var data={ url:$('#n_url').value.trim(), title:title, thumb:pick.thumb, cats:pick.cats.slice(), importance:pick.importance, status:pick.status,
-      summary:$('#n_summary').value.trim(), insight:$('#n_insight').value.trim(), action:$('#n_action').value.trim() };
+      summary:$('#n_summary').value.trim(), insight:$('#n_insight').value.trim(), action:$('#n_action').value.trim(), full:$('#n_full').value.trim() };
     if(editingId){ var n=notes.find(function(x){return x.id===editingId;}); if(n) Object.assign(n,data);
     } else { data.id=uid(); data.createdAt=Date.now(); data.views=0; notes.unshift(data); }
     persist(); closeForm(); render();
@@ -266,6 +269,20 @@
   function del(id){ if(!confirm('이 노트를 삭제할까요?')) return; notes=notes.filter(function(x){return x.id!==id;}); persist(); render(); }
 
   var STLABEL={apply:'적용',review:'적용 검토',ref:'참고'};
+  function fullHtml(t){ return esc(t).replace(/\n/g,'<br>'); }
+  function copyNote(n){
+    var lines=[];
+    lines.push('【'+(n.title||'')+'】');
+    if((n.cats||[]).length) lines.push('분류: '+n.cats.join(', '));
+    if(n.summary){ lines.push('\n[핵심 요점]'); lines.push(n.summary); }
+    if(n.insight){ lines.push('\n[인사이트]'); lines.push(n.insight); }
+    if(n.action){ lines.push('\n[적용 액션]'); lines.push(n.action); }
+    if(n.full){ lines.push('\n[전체 내용]'); lines.push(n.full); }
+    if(n.url){ lines.push('\n'+n.url); }
+    var txt=lines.join('\n');
+    try{ navigator.clipboard.writeText(txt).then(function(){ alert('복사됐어요 ✓ 원하는 곳에 붙여넣기'); },function(){ prompt('아래를 길게 눌러 복사하세요', txt); }); }
+    catch(e){ prompt('아래를 길게 눌러 복사하세요', txt); }
+  }
   function render(){
     var q=filter.q.toLowerCase();
     var arr=notes.filter(function(n){
@@ -301,11 +318,13 @@
           '</div>'+
         '</div>'+
         '<div class="det" style="display:none">'+
-          (sumHtml?'<div class="rsec"><h4>📌 3줄 요점</h4>'+sumHtml+'</div>':'')+
+          (sumHtml?'<div class="rsec"><h4>📌 핵심 요점</h4>'+sumHtml+'</div>':'')+
           (n.insight?'<div class="rsec"><h4>💡 인사이트</h4><p>'+esc(n.insight)+'</p></div>':'')+
           (n.action?'<div class="rsec"><h4>🎯 실제 적용 액션</h4><p>'+esc(n.action)+'</p></div>':'')+
+          (n.full?'<div class="rsec"><h4>📜 전체 내용</h4><p>'+fullHtml(n.full)+'</p></div>':'')+
           '<div class="acts">'+
             (n.url?'<a class="btn sm" href="'+esc(n.url)+'" target="_blank" rel="noreferrer">▶ 열기</a>':'')+
+            '<button class="btn sm" data-copy="'+n.id+'">📋 복사</button>'+
             '<button class="btn sm" data-edit="'+n.id+'">수정</button><button class="btn sm" data-del="'+n.id+'">삭제</button>'+
           '</div>'+
         '</div>';
@@ -313,6 +332,7 @@
         if(show){ n.views=(n.views||0)+1; persist(); } };
       el.querySelector('[data-del="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); del(n.id); };
       el.querySelector('[data-edit="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); openForm(n); };
+      var cp=el.querySelector('[data-copy="'+n.id+'"]'); if(cp) cp.onclick=function(e){ e.stopPropagation(); copyNote(n); };
       L.appendChild(el);
     });
   }
