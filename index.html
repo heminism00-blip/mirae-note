@@ -18,20 +18,20 @@
   @media (prefers-color-scheme: dark){
     :root{ --ink:#f4f4f5; --sub:#a1a1aa; --line:#3f3f46; --bg:#18181b; --card:#232326; --soft:#2e2e33;
            --accent:#2dd4bf; --accent-bg:#0f2e2a; --accent-bd:#155e56; }
-    input,textarea{ background:#2e2e33 !important; }
+    input,textarea,select{ background:#2e2e33 !important; }
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body{ margin:0; background:var(--bg); color:var(--ink);
         font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
-  .wrap{ max-width:520px; margin:0 auto; padding:18px 14px 60px; }
+  .wrap{ max-width:560px; margin:0 auto; padding:16px 14px 60px; }
   h1{ font-size:22px; font-weight:800; letter-spacing:-.02em; margin:0 0 2px; }
-  .lead{ font-size:13px; color:var(--sub); margin:0 0 16px; }
+  .lead{ font-size:12px; color:var(--sub); margin:0 0 14px; }
   .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:10px; }
   label{ display:block; font-size:12px; color:var(--sub); margin:0 0 4px; }
-  input,textarea{ width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+  input,textarea,select{ width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
         font-size:15px; background:#fff; color:var(--ink); outline:none; font-family:inherit; }
   input:focus,textarea:focus{ border-color:var(--accent); }
-  textarea{ resize:vertical; min-height:52px; }
+  textarea{ resize:vertical; min-height:72px; line-height:1.5; }
   .field{ margin-bottom:10px; }
   .btn{ border:1px solid var(--line); background:var(--soft); color:var(--ink); border-radius:9px;
         padding:9px 12px; font-size:14px; font-weight:600; cursor:pointer; }
@@ -41,9 +41,7 @@
   .row{ display:flex; gap:8px; }
   .chips{ display:flex; flex-wrap:wrap; gap:6px; }
   .chip{ border:1px solid var(--line); background:var(--card); color:var(--sub); border-radius:999px;
-         padding:5px 11px; font-size:13px; cursor:pointer; user-select:none; }
-  .chip.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
-  .chip.cat.on{ background:var(--accent-bg); color:var(--accent); border-color:var(--accent-bd); }
+         padding:5px 11px; font-size:12.5px; cursor:pointer; user-select:none; white-space:nowrap; }
   .seg{ display:flex; gap:6px; }
   .seg button{ flex:1; border:1px solid var(--line); background:var(--card); color:var(--sub);
         border-radius:9px; padding:8px; font-size:13px; font-weight:600; cursor:pointer; }
@@ -53,38 +51,40 @@
   .stars{ font-size:22px; letter-spacing:3px; cursor:pointer; user-select:none; color:#d4d4d8; }
   .stars .on{ color:#f59e0b; }
   .thumb{ width:100%; border-radius:10px; display:block; aspect-ratio:16/9; object-fit:cover; background:var(--soft); }
-  .thumb.sm{ width:104px; flex:0 0 104px; aspect-ratio:16/9; }
+  .thumb.sm{ width:108px; flex:0 0 108px; aspect-ratio:16/9; }
+  /* 노트 카드 */
   .note{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:10px; border-left-width:4px; }
-  .note.apply{ border-left-color:var(--apply); }
-  .note.review{ border-left-color:var(--review); }
-  .note.ref{ border-left-color:var(--ref); }
+  .note.apply{ border-left-color:var(--apply); } .note.review{ border-left-color:var(--review); } .note.ref{ border-left-color:var(--ref); }
   .note-top{ display:flex; gap:10px; padding:10px; cursor:pointer; }
   .note-body{ min-width:0; flex:1; }
-  .note-title{ font-size:15px; font-weight:600; line-height:1.35; margin:0 0 4px;
+  .note-title{ font-size:15px; font-weight:700; line-height:1.35; margin:2px 0 4px;
         display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .badge{ display:inline-block; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; }
-  .badge.apply{ background:#f0fdf4; color:var(--apply); }
-  .badge.review{ background:#fffbeb; color:var(--review); }
-  .badge.ref{ background:#f4f4f5; color:var(--ref); }
+  .badge.apply{ background:#f0fdf4; color:var(--apply); } .badge.review{ background:#fffbeb; color:var(--review); } .badge.ref{ background:#f4f4f5; color:var(--ref); }
   .meta{ display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-top:5px; }
-  .tag{ font-size:11px; color:var(--accent); background:var(--accent-bg); border:1px solid var(--accent-bd);
-        border-radius:5px; padding:1px 6px; }
-  .det{ border-top:1px solid var(--line); padding:10px 12px; font-size:13.5px; line-height:1.6; }
-  .det h4{ margin:8px 0 2px; font-size:12px; color:var(--sub); font-weight:700; }
-  .det p{ margin:0; white-space:pre-wrap; }
-  .det .acts{ display:flex; gap:8px; margin-top:10px; }
-  .empty{ text-align:center; color:var(--sub); font-size:13px; padding:30px 0; }
+  .tag{ font-size:11px; border-radius:5px; padding:1px 7px; border:1px solid; font-weight:600; }
+  /* 리포트 상세 */
+  .det{ border-top:1px solid var(--line); padding:12px; background:var(--soft); }
+  .rsec{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .rsec h4{ margin:0 0 5px; font-size:12px; font-weight:800; color:var(--accent); }
+  .rsec ul{ margin:0; padding-left:17px; } .rsec li{ margin:3px 0; font-size:13.5px; line-height:1.55; }
+  .rsec p{ margin:0; font-size:13.5px; line-height:1.6; white-space:pre-wrap; }
+  .acts{ display:flex; gap:8px; margin-top:4px; }
+  .toolbar{ display:flex; gap:8px; align-items:center; margin:6px 0 4px; }
+  .toolbar select{ flex:0 0 auto; width:auto; padding:7px 10px; font-size:13px; }
   .count{ font-size:12px; color:var(--sub); margin:4px 2px 8px; }
-  .foot{ text-align:center; font-size:11px; color:var(--sub); margin-top:16px; }
+  .empty{ text-align:center; color:var(--sub); font-size:13px; padding:30px 0; }
+  .foot{ text-align:center; font-size:11px; color:var(--sub); margin-top:16px; line-height:1.7; }
+  .foot a{ color:var(--accent); font-weight:600; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>미래노트</h1>
-  <p class="lead">투자 영상·자료를 담고 → 요점·인사이트·적용안으로 정리. 지금 보고, 미래에 적용.</p>
+  <p class="lead">영상·자료를 담으면 AI가 분류·요약·인사이트·적용안으로 정리. 지금 보고, 미래에 적용.</p>
 
-  <button id="openAdd" class="btn primary block" style="margin-bottom:12px">+ 새 노트 추가</button>
-  <div style="font-size:11px;color:var(--sub);margin:-6px 0 12px;text-align:center">💡 유튜브에서 <b>공유 → 미래노트</b> 하면 링크가 자동으로 들어와요 (홈 화면 추가 후)</div>
+  <button id="openAdd" class="btn primary block" style="margin-bottom:8px">+ 새 노트 추가</button>
+  <div style="font-size:11px;color:var(--sub);margin:-2px 0 12px;text-align:center">💡 유튜브에서 <b>공유 → 미래노트</b> 하면 링크가 자동으로 들어와요 (홈 화면 추가 후)</div>
 
   <div class="card" id="form" style="display:none">
     <div class="field">
@@ -94,24 +94,19 @@
         <button class="btn" id="fetchBtn" style="flex:0 0 auto">불러오기</button>
       </div>
       <div id="fetchMsg" style="font-size:11px;color:var(--sub);margin-top:4px"></div>
-      <button class="btn primary block" id="aiBtn" style="margin-top:8px">✨ AI로 자동 정리 (제목·요약·인사이트·적용)</button>
+      <button class="btn primary block" id="aiBtn" style="margin-top:8px">✨ AI로 자동 정리 (분류·요약·인사이트·적용)</button>
       <div id="aiMsg" style="font-size:11px;color:var(--sub);margin-top:4px"></div>
     </div>
     <img id="n_thumb" class="thumb" style="display:none;margin-bottom:10px" />
     <div class="field"><label>제목</label><input id="n_title" type="text" placeholder="영상/자료 제목" /></div>
-    <div class="field">
-      <label>카테고리 (여러 개 선택)</label>
-      <div class="chips" id="catPick"></div>
-    </div>
-    <div class="field">
-      <label>중요도</label>
+    <div class="field"><label>카테고리 (AI 자동·수정 가능)</label><div class="chips" id="catPick"></div></div>
+    <div class="field"><label>중요도</label>
       <div class="stars" id="starPick" data-v="0"><span data-i="1">★</span><span data-i="2">★</span><span data-i="3">★</span></div>
     </div>
-    <div class="field"><label>3줄 요점</label><textarea id="n_summary" placeholder="AI가 채우거나 직접 입력"></textarea></div>
-    <div class="field"><label>인사이트</label><textarea id="n_insight" placeholder="내가 얻은 인사이트"></textarea></div>
-    <div class="field"><label>실제 적용안 (액션)</label><textarea id="n_action" placeholder="내 투자/일에 이렇게 적용"></textarea></div>
-    <div class="field">
-      <label>적용 상태</label>
+    <div class="field"><label>3줄 요점 (한 줄에 하나)</label><textarea id="n_summary" placeholder="AI가 채우거나 직접 입력"></textarea></div>
+    <div class="field"><label>인사이트</label><textarea id="n_insight" placeholder="얻은 인사이트"></textarea></div>
+    <div class="field"><label>실제 적용안 (액션)</label><textarea id="n_action" placeholder="이렇게 적용"></textarea></div>
+    <div class="field"><label>적용 상태</label>
       <div class="seg" id="statusPick">
         <button data-s="apply" class="apply">🟢 적용</button>
         <button data-s="review" class="review on">🟡 적용 검토</button>
@@ -124,7 +119,7 @@
     </div>
   </div>
 
-  <div class="field"><input id="search" type="text" placeholder="🔎 제목·내용 검색" /></div>
+  <div class="field" style="margin-bottom:6px"><input id="search" type="text" placeholder="🔎 제목·내용 검색" /></div>
   <div class="chips" id="statusFilter" style="margin-bottom:6px">
     <span class="chip on" data-s="all">전체</span>
     <span class="chip" data-s="review">🟡 적용 검토</span>
@@ -132,26 +127,38 @@
     <span class="chip" data-s="ref">⚪ 참고</span>
   </div>
   <div class="chips" id="catFilter" style="margin-bottom:6px"></div>
-  <div class="count" id="count"></div>
+  <div class="toolbar">
+    <select id="sortSel">
+      <option value="recent">최신순</option>
+      <option value="views">자주 본 순</option>
+      <option value="importance">중요도순</option>
+      <option value="status">상태순(검토→적용→참고)</option>
+    </select>
+    <span class="count" id="count" style="margin:0"></span>
+  </div>
 
   <div id="list"></div>
 
-  <div class="foot">데이터·AI키는 이 브라우저에만 저장돼요. 기기 바꾸면 안 넘어가니 중요한 건 따로 백업.<br><a href="#" id="keyBtn" style="color:var(--accent);font-weight:600">🔑 AI 키 설정/변경</a></div>
+  <div class="foot">데이터·AI키는 이 브라우저에만 저장돼요. 기기 바꾸면 안 넘어가니 중요한 건 따로 백업.<br><a href="#" id="keyBtn">🔑 AI 키 설정/변경</a></div>
 </div>
 
 <script>
 (function(){
   // ── 설정 (키는 저장소에 안 넣음! 앱 첫 사용 시 폰에만 저장) ──
-  const GEMINI_MODELS=["gemini-3.8-flash","gemini-3.5-flash","gemini-flash-latest"]; // 순서대로 시도
-  const MY_CONTEXT="개인 투자자. 삼성전자·SK하이닉스·S&P500 ETF 보유, CORE(지수 적립)+ACTIVE(개별주 공부) 원칙.";
+  const GEMINI_MODELS=["gemini-3.8-flash","gemini-3.5-flash","gemini-flash-latest"];
+  const MY_CONTEXT="사용자는 투자(주식·재테크)와 건강·미용·요리·여행 등 실생활 콘텐츠 영상을 저장한다. 투자 영상이면 개인 투자자 관점(분산·장기·리스크)에서, 그 외는 실생활에 바로 적용하는 관점에서 인사이트와 액션을 제시.";
   var GK='miraenote:gk';
   function getKey(){ try{ return localStorage.getItem(GK)||''; }catch(e){ return ''; } }
   function setKey(k){ try{ if(k) localStorage.setItem(GK,k); else localStorage.removeItem(GK); }catch(e){} }
   // ─────────────────────────────────────────────────────────
+
   var $=function(s){return document.querySelector(s);};
-  var CATS=['반도체','금리','환율','ETF','심리','기타'];
+  var CATS=['주식','재테크','건강(다이어트)','건강(운동)','건강(음식)','미용(홈케어)','미용(시술)','미용(메이크업)','패션뷰티','트렌드','요리','여행','기타'];
+  var CATCOLOR={ '주식':'#2563eb','재테크':'#0ea5e9','건강(다이어트)':'#16a34a','건강(운동)':'#15803d','건강(음식)':'#65a30d',
+    '미용(홈케어)':'#db2777','미용(시술)':'#be185d','미용(메이크업)':'#e11d48','패션뷰티':'#7c3aed','트렌드':'#d97706','요리':'#ea580c','여행':'#0d9488','기타':'#71717a' };
+  function cColor(c){ return CATCOLOR[c]||'#71717a'; }
   var KEY='miraenote:v1';
-  var notes=[], editingId=null, filter={status:'all',cat:'all',q:''};
+  var notes=[], editingId=null, filter={status:'all',cat:'all',q:''}, sortBy='recent';
   var pick={cats:[], importance:0, status:'review', thumb:''};
 
   function load(){ try{ notes=JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ notes=[]; } }
@@ -161,24 +168,23 @@
   function ytId(url){ var m=String(url).match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
 
   function renderCatPick(){ var c=$('#catPick'); c.innerHTML='';
-    CATS.forEach(function(cat){ var el=document.createElement('span');
-      el.className='chip cat'+(pick.cats.indexOf(cat)>=0?' on':''); el.textContent=cat;
+    CATS.forEach(function(cat){ var on=pick.cats.indexOf(cat)>=0; var el=document.createElement('span');
+      el.className='chip'; el.textContent=cat;
+      if(on){ el.style.background=cColor(cat); el.style.color='#fff'; el.style.borderColor=cColor(cat); }
       el.onclick=function(){ var i=pick.cats.indexOf(cat); if(i>=0)pick.cats.splice(i,1); else pick.cats.push(cat); renderCatPick(); };
       c.appendChild(el); }); }
   function renderCatFilter(){ var c=$('#catFilter'); c.innerHTML='';
-    var all=document.createElement('span'); all.className='chip cat'+(filter.cat==='all'?' on':''); all.textContent='전체 분야';
-    all.onclick=function(){ filter.cat='all'; render(); }; c.appendChild(all);
-    CATS.forEach(function(cat){ var el=document.createElement('span');
-      el.className='chip cat'+(filter.cat===cat?' on':''); el.textContent=cat;
-      el.onclick=function(){ filter.cat=cat; render(); }; c.appendChild(el); }); }
+    var all=document.createElement('span'); all.className='chip'; all.textContent='전체 분야';
+    if(filter.cat==='all'){ all.style.background='var(--accent)'; all.style.color='#fff'; all.style.borderColor='var(--accent)'; }
+    all.onclick=function(){ filter.cat='all'; render(); renderCatFilter(); }; c.appendChild(all);
+    CATS.forEach(function(cat){ var el=document.createElement('span'); el.className='chip'; el.textContent=cat;
+      if(filter.cat===cat){ el.style.background=cColor(cat); el.style.color='#fff'; el.style.borderColor=cColor(cat); }
+      el.onclick=function(){ filter.cat=cat; render(); renderCatFilter(); }; c.appendChild(el); }); }
 
   function renderStars(){ var s=$('#starPick'); s.dataset.v=pick.importance;
-    [].forEach.call(s.children,function(sp){ sp.className = (parseInt(sp.dataset.i)<=pick.importance)?'on':''; }); }
-  $('#starPick').addEventListener('click',function(e){ if(e.target.dataset.i){ var v=parseInt(e.target.dataset.i);
-    pick.importance = (pick.importance===v)?v-1:v; renderStars(); } });
-
-  $('#statusPick').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b)return;
-    pick.status=b.dataset.s;
+    [].forEach.call(s.children,function(sp){ sp.className=(parseInt(sp.dataset.i)<=pick.importance)?'on':''; }); }
+  $('#starPick').addEventListener('click',function(e){ if(e.target.dataset.i){ var v=parseInt(e.target.dataset.i); pick.importance=(pick.importance===v)?v-1:v; renderStars(); } });
+  $('#statusPick').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b)return; pick.status=b.dataset.s;
     [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); }); });
 
   function openForm(note){
@@ -188,45 +194,36 @@
       $('#n_summary').value=note.summary||''; $('#n_insight').value=note.insight||''; $('#n_action').value=note.action||'';
       pick={cats:(note.cats||[]).slice(), importance:note.importance||0, status:note.status||'review', thumb:note.thumb||''};
       if(note.thumb){ $('#n_thumb').src=note.thumb; $('#n_thumb').style.display=''; } else { $('#n_thumb').style.display='none'; }
-    } else { editingId=null;
-      $('#n_url').value=''; $('#n_title').value=''; $('#n_summary').value=''; $('#n_insight').value=''; $('#n_action').value='';
-      pick={cats:[], importance:0, status:'review', thumb:''}; $('#n_thumb').style.display='none';
-    }
-    $('#fetchMsg').textContent=''; renderCatPick(); renderStars();
+    } else { editingId=null; $('#n_url').value=''; $('#n_title').value=''; $('#n_summary').value=''; $('#n_insight').value=''; $('#n_action').value='';
+      pick={cats:[], importance:0, status:'review', thumb:''}; $('#n_thumb').style.display='none'; }
+    $('#fetchMsg').textContent=''; $('#aiMsg').textContent=''; renderCatPick(); renderStars();
     [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); });
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function closeForm(){ $('#form').style.display='none'; $('#openAdd').style.display=''; editingId=null; }
-  // 제목 키워드로 카테고리 자동 추천
-  function suggestCats(){ var t=($('#n_title').value||'').toLowerCase();
-    var map={ '반도체':['반도체','하이닉스','삼성전자','hbm','d램','엔비디아','nvidia','tsmc','마이크론','칩','soxx','sox'],
-      '금리':['금리','fomc','연준','기준금리','cpi','ppi','물가','인플레'],
-      '환율':['환율','달러','원달러','엔화','위안','원화'],
-      'ETF':['etf','s&p','나스닥','지수','인덱스','배당','qqq','spy'],
-      '심리':['심리','멘탈','공포','탐욕','습관','마인드'] };
-    Object.keys(map).forEach(function(cat){ if(pick.cats.indexOf(cat)>=0) return;
-      if(map[cat].some(function(k){return t.indexOf(k)>=0;})) pick.cats.push(cat); });
-    renderCatPick(); }
   $('#openAdd').onclick=function(){ openForm(null); };
+  $('#cancelBtn').onclick=closeForm;
 
-  // ✨ AI로 자동 정리 (제미나이가 유튜브 영상 읽고 채움)
+  // ✨ AI 자동정리
   $('#aiBtn').onclick=async function(){
     var url=$('#n_url').value.trim();
     if(!url){ $('#aiMsg').textContent='링크를 먼저 넣어주세요.'; return; }
-    var KEY=getKey();
-    if(!KEY){ KEY=(prompt('제미나이 API 키를 입력하세요 (이 기기에만 저장돼요):','')||'').trim(); if(KEY) setKey(KEY); }
-    if(!KEY){ $('#aiMsg').textContent='AI 키가 필요해요 (아래 🔑 AI 키 설정).'; return; }
+    var K=getKey();
+    if(!K){ K=(prompt('제미나이 API 키를 입력하세요 (이 기기에만 저장돼요):','')||'').trim(); if(K) setKey(K); }
+    if(!K){ $('#aiMsg').textContent='AI 키가 필요해요 (아래 🔑 AI 키 설정).'; return; }
     $('#aiBtn').disabled=true; $('#aiMsg').textContent='AI가 영상 읽고 정리 중… (10~40초)';
     var vid=ytId(url); if(vid){ pick.thumb='https://img.youtube.com/vi/'+vid+'/hqdefault.jpg'; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
-    var promptText='너는 투자 노트 정리 도우미다. 아래 유튜브 영상을 보고 JSON으로만 답하라(설명·마크다운·코드펜스 금지).\n사용자 맥락: '+MY_CONTEXT+'\n형식: {"title":"핵심을 담은 간결한 제목","categories":["반도체","금리","환율","ETF","심리","기타 중 해당되는 것만"],"importance":2,"summary":"핵심 3줄, 각 줄 줄바꿈","insight":"이 영상에서 투자자가 얻을 인사이트 2~3문장","action":"사용자 맥락에 맞춘 실제 적용 액션 2~3개","status":"apply 또는 review 또는 ref 중 추천"}';
+    var promptText='너는 영상 정리 도우미다. 아래 영상을 보고 JSON으로만 답하라(설명·마크다운·코드펜스 금지).\n사용자 맥락: '+MY_CONTEXT
+      +'\n카테고리는 반드시 다음 중에서 1~2개만 고른다: '+CATS.join(', ')
+      +'\n형식: {"title":"간결한 제목","categories":["위 목록 중 1~2개"],"importance":2,"summary":["핵심 요점 3개, 각 한 문장"],"insight":"얻을 인사이트 2~3문장","action":"실제 적용 액션 2~3개(줄바꿈)","status":"apply 또는 review 또는 ref 중 추천"}';
     try{
       var body=JSON.stringify({ contents:[{parts:[{text:promptText},{file_data:{file_uri:url}}]}], generationConfig:{responseMimeType:'application/json'} });
       var j=null, lastErr='';
       for(var i=0;i<GEMINI_MODELS.length;i++){
         $('#aiMsg').textContent='AI 정리 중… ('+GEMINI_MODELS[i]+')';
-        var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODELS[i]+':generateContent?key='+encodeURIComponent(KEY),{method:'POST',headers:{'Content-Type':'application/json'},body:body});
+        var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODELS[i]+':generateContent?key='+encodeURIComponent(K),{method:'POST',headers:{'Content-Type':'application/json'},body:body});
         var jj=await res.json();
-        if(jj.error){ lastErr=jj.error.message||''; if(/not found|not supported|does not|404|NOT_FOUND|unsupported/i.test(lastErr)) continue; j=jj; break; }
+        if(jj.error){ lastErr=jj.error.message||''; if(/not found|no longer|not supported|does not|404|NOT_FOUND|unsupported/i.test(lastErr)) continue; j=jj; break; }
         j=jj; break;
       }
       if(!j || j.error){ $('#aiMsg').textContent='오류: '+(lastErr||(j&&j.error&&j.error.message)||'키/권한 확인'); $('#aiBtn').disabled=false; return; }
@@ -234,9 +231,9 @@
       var m=txt.replace(/```json/gi,'').replace(/```/g,'').match(/\{[\s\S]*\}/);
       var o=JSON.parse(m[0]);
       if(o.title) $('#n_title').value=o.title;
-      if(o.summary) $('#n_summary').value=o.summary;
+      if(o.summary) $('#n_summary').value=Array.isArray(o.summary)?o.summary.join('\n'):o.summary;
       if(o.insight) $('#n_insight').value=o.insight;
-      if(o.action) $('#n_action').value=o.action;
+      if(o.action) $('#n_action').value=Array.isArray(o.action)?o.action.join('\n'):o.action;
       if(typeof o.importance==='number'){ pick.importance=Math.max(0,Math.min(3,Math.round(o.importance))); renderStars(); }
       if(Array.isArray(o.categories)){ o.categories.forEach(function(c){ if(CATS.indexOf(c)>=0 && pick.cats.indexOf(c)<0) pick.cats.push(c); }); renderCatPick(); }
       if(o.status && ['apply','review','ref'].indexOf(o.status)>=0){ pick.status=o.status; [].forEach.call($('#statusPick').children,function(x){x.classList.toggle('on',x.dataset.s===pick.status);}); }
@@ -245,32 +242,27 @@
     $('#aiBtn').disabled=false;
   };
 
-  $('#cancelBtn').onclick=closeForm;
-
+  // 메타 불러오기(제목·썸네일)
   $('#fetchBtn').onclick=function(){
     var url=$('#n_url').value.trim(); if(!url){ $('#fetchMsg').textContent='링크를 먼저 넣어주세요.'; return; }
-    var id=ytId(url);
-    if(id){ pick.thumb='https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
+    var id=ytId(url); if(id){ pick.thumb='https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
     $('#fetchMsg').textContent='제목 불러오는 중…';
-    fetch('https://noembed.com/embed?url='+encodeURIComponent(url)).then(function(r){return r.json();}).then(function(j){
-      if(j && j.title){ if(!$('#n_title').value) $('#n_title').value=j.title; suggestCats();
-        if(!pick.thumb && j.thumbnail_url){ pick.thumb=j.thumbnail_url; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
-        $('#fetchMsg').textContent='제목·썸네일 불러옴 ✓ (필요하면 수정하세요)';
-      } else { $('#fetchMsg').textContent='자동 불러오기 실패 — 제목을 직접 입력해주세요.'; }
-    }).catch(function(){ $('#fetchMsg').textContent='자동 불러오기 실패 — 제목을 직접 입력해주세요.'; });
+    fetch('https://noembed.com/embed?url='+encodeURIComponent(url)).then(function(r){return r.json();}).then(function(jj){
+      if(jj&&jj.title){ if(!$('#n_title').value) $('#n_title').value=jj.title;
+        if(!pick.thumb&&jj.thumbnail_url){ pick.thumb=jj.thumbnail_url; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
+        $('#fetchMsg').textContent='제목·썸네일 불러옴 ✓'; } else { $('#fetchMsg').textContent='자동 실패 — 제목 직접 입력'; }
+    }).catch(function(){ $('#fetchMsg').textContent='자동 실패 — 제목 직접 입력'; });
   };
 
   $('#saveBtn').onclick=function(){
     var title=$('#n_title').value.trim();
-    if(!title){ $('#fetchMsg').textContent='제목은 꼭 입력해주세요.'; $('#n_title').focus(); return; }
-    var data={ url:$('#n_url').value.trim(), title:title, thumb:pick.thumb,
-      cats:pick.cats.slice(), importance:pick.importance, status:pick.status,
+    if(!title){ $('#aiMsg').textContent='제목은 꼭 입력해주세요.'; $('#n_title').focus(); return; }
+    var data={ url:$('#n_url').value.trim(), title:title, thumb:pick.thumb, cats:pick.cats.slice(), importance:pick.importance, status:pick.status,
       summary:$('#n_summary').value.trim(), insight:$('#n_insight').value.trim(), action:$('#n_action').value.trim() };
     if(editingId){ var n=notes.find(function(x){return x.id===editingId;}); if(n) Object.assign(n,data);
-    } else { data.id=uid(); data.createdAt=Date.now(); notes.unshift(data); }
+    } else { data.id=uid(); data.createdAt=Date.now(); data.views=0; notes.unshift(data); }
     persist(); closeForm(); render();
   };
-
   function del(id){ if(!confirm('이 노트를 삭제할까요?')) return; notes=notes.filter(function(x){return x.id!==id;}); persist(); render(); }
 
   var STLABEL={apply:'적용',review:'적용 검토',ref:'참고'};
@@ -283,64 +275,60 @@
       return true;
     });
     var order={review:0,apply:1,ref:2};
-    arr.sort(function(a,b){ if(order[a.status]!==order[b.status]) return order[a.status]-order[b.status];
-      if((b.importance||0)!==(a.importance||0)) return (b.importance||0)-(a.importance||0);
-      return (b.createdAt||0)-(a.createdAt||0); });
-
-    $('#count').textContent = '전체 '+notes.length+'개 · 보이는 '+arr.length+'개';
+    arr.sort(function(a,b){
+      if(sortBy==='recent') return (b.createdAt||0)-(a.createdAt||0);
+      if(sortBy==='views') return (b.views||0)-(a.views||0) || (b.createdAt||0)-(a.createdAt||0);
+      if(sortBy==='importance') return (b.importance||0)-(a.importance||0) || (b.createdAt||0)-(a.createdAt||0);
+      if(sortBy==='status') return (order[a.status]-order[b.status]) || (b.createdAt||0)-(a.createdAt||0);
+      return 0;
+    });
+    $('#count').textContent='전체 '+notes.length+'개 · 보이는 '+arr.length+'개';
     var L=$('#list'); L.innerHTML='';
     if(arr.length===0){ L.innerHTML='<div class="empty">'+(notes.length===0?'첫 노트를 추가해보세요 👆':'조건에 맞는 노트가 없어요')+'</div>'; return; }
-
     arr.forEach(function(n){
       var el=document.createElement('div'); el.className='note '+n.status;
-      var stars=''; for(var i=1;i<=3;i++) stars+= (i<=(n.importance||0)?'★':'');
-      var tags=(n.cats||[]).map(function(c){return '<span class="tag">'+esc(c)+'</span>';}).join('');
+      var stars=''; for(var i=1;i<=3;i++) stars+=(i<=(n.importance||0)?'★':'');
+      var tags=(n.cats||[]).map(function(c){ var col=cColor(c); return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+esc(c)+'</span>'; }).join('');
       var thumb=n.thumb?('<img class="thumb sm" src="'+esc(n.thumb)+'" onerror="this.style.display=\'none\'">'):'';
+      var sumItems=(n.summary||'').split('\n').map(function(x){return x.replace(/^[-•·\s]+/,'').trim();}).filter(Boolean);
+      var sumHtml=sumItems.length?('<ul>'+sumItems.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'):'';
       el.innerHTML=
         '<div class="note-top">'+thumb+
           '<div class="note-body">'+
-            '<span class="badge '+n.status+'">'+STLABEL[n.status]+'</span> '+
-            (stars?'<span style="color:#f59e0b;font-size:12px">'+stars+'</span>':'')+
+            '<span class="badge '+n.status+'">'+STLABEL[n.status]+'</span> '+(stars?'<span style="color:#f59e0b;font-size:12px">'+stars+'</span>':'')+
             '<div class="note-title">'+esc(n.title)+'</div>'+
             '<div class="meta">'+tags+'</div>'+
           '</div>'+
         '</div>'+
         '<div class="det" style="display:none">'+
-          (n.summary?'<h4>3줄 요점</h4><p>'+esc(n.summary)+'</p>':'')+
-          (n.insight?'<h4>인사이트</h4><p>'+esc(n.insight)+'</p>':'')+
-          (n.action?'<h4>실제 적용안</h4><p>'+esc(n.action)+'</p>':'')+
+          (sumHtml?'<div class="rsec"><h4>📌 3줄 요점</h4>'+sumHtml+'</div>':'')+
+          (n.insight?'<div class="rsec"><h4>💡 인사이트</h4><p>'+esc(n.insight)+'</p></div>':'')+
+          (n.action?'<div class="rsec"><h4>🎯 실제 적용 액션</h4><p>'+esc(n.action)+'</p></div>':'')+
           '<div class="acts">'+
             (n.url?'<a class="btn sm" href="'+esc(n.url)+'" target="_blank" rel="noreferrer">▶ 열기</a>':'')+
-            '<button class="btn sm" data-edit="'+n.id+'">수정</button>'+
-            '<button class="btn sm" data-del="'+n.id+'">삭제</button>'+
+            '<button class="btn sm" data-edit="'+n.id+'">수정</button><button class="btn sm" data-del="'+n.id+'">삭제</button>'+
           '</div>'+
         '</div>';
-      el.querySelector('.note-top').onclick=function(){ var d=el.querySelector('.det'); d.style.display = d.style.display==='none'?'':'none'; };
+      el.querySelector('.note-top').onclick=function(){ var d=el.querySelector('.det'); var show=d.style.display==='none'; d.style.display=show?'':'none';
+        if(show){ n.views=(n.views||0)+1; persist(); } };
       el.querySelector('[data-del="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); del(n.id); };
       el.querySelector('[data-edit="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); openForm(n); };
       L.appendChild(el);
     });
   }
 
-  $('#statusFilter').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c)return;
-    filter.status=c.dataset.s; [].forEach.call($('#statusFilter').children,function(x){x.classList.toggle('on',x===c);}); render(); });
+  $('#statusFilter').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c)return; filter.status=c.dataset.s;
+    [].forEach.call($('#statusFilter').children,function(x){x.classList.toggle('on',x===c);}); render(); });
   $('#search').addEventListener('input',function(){ filter.q=this.value; render(); });
-  $('#keyBtn').onclick=function(e){ e.preventDefault(); var cur=getKey();
-    var k=prompt('제미나이 API 키 (이 기기에만 저장 · 비우면 삭제):', cur||'');
-    if(k!==null){ setKey(k.trim()); alert(k.trim()?'키 저장됨 ✓':'키 삭제됨'); } };
+  $('#sortSel').addEventListener('change',function(){ sortBy=this.value; render(); });
+  $('#keyBtn').onclick=function(e){ e.preventDefault(); var cur=getKey(); var k=prompt('제미나이 API 키 (이 기기에만 저장 · 비우면 삭제):', cur||''); if(k!==null){ setKey(k.trim()); alert(k.trim()?'키 저장됨 ✓':'키 삭제됨'); } };
 
-  // 유튜브 공유로 들어온 링크 자동 처리 (Web Share Target)
-  function handleShare(){
-    var p=new URLSearchParams(location.search);
-    var url=p.get('url')||'', text=p.get('text')||'', title=p.get('title')||'';
-    if(!url && text){ var m=text.match(/https?:\/\/[^\s]+/); if(m) url=m[0]; }
-    if(!url) return;
-    openForm(null);
-    $('#n_url').value=url;
+  // 유튜브 공유 자동 처리
+  function handleShare(){ var p=new URLSearchParams(location.search); var url=p.get('url')||'', text=p.get('text')||'', title=p.get('title')||'';
+    if(!url && text){ var mm=text.match(/https?:\/\/[^\s]+/); if(mm) url=mm[0]; }
+    if(!url) return; openForm(null); $('#n_url').value=url;
     if(title && !/https?:\/\//.test(title)) $('#n_title').value=title;
-    try{ history.replaceState(null,'',location.pathname); }catch(e){}
-    $('#fetchBtn').click();  // 제목·썸네일·카테고리 자동
-  }
+    try{ history.replaceState(null,'',location.pathname); }catch(e){} $('#fetchBtn').click(); }
 
   load(); renderCatFilter(); render(); handleShare();
 })();
