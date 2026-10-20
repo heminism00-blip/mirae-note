@@ -157,7 +157,10 @@
     <div id="glist"></div>
   </div>
 
-  <div class="foot">데이터·AI키는 이 브라우저에만 저장돼요. 기기 바꾸면 안 넘어가니 중요한 건 따로 백업.<br><a href="#" id="keyBtn">🔑 AI 키 설정/변경</a></div>
+  <div class="foot">데이터·AI키는 이 브라우저에만 저장돼요. 기기 바꾸면 안 넘어가니 백업으로 옮기세요.<br>
+    <a href="#" id="exportBtn">📤 내보내기(백업)</a> · <a href="#" id="importBtn">📥 가져오기(복원)</a> · <a href="#" id="keyBtn">🔑 AI 키</a>
+    <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
+  </div>
 </div>
 
 <script>
@@ -365,7 +368,7 @@
           (n.insight?'<div class="rsec"><h4>💡 인사이트</h4><p>'+esc(n.insight)+'</p></div>':'')+
           (n.action?'<div class="rsec"><h4>🎯 실제 적용 액션</h4><p>'+esc(n.action)+'</p></div>':'')+
           (n.full?'<div class="rsec"><h4>📜 전체 내용</h4><p>'+fullHtml(n.full)+'</p></div>':'')+
-          (((n.terms||[]).length)?'<div class="rsec"><h4>💡 용어</h4><p>'+n.terms.map(function(t){return '<b>'+esc(t.word)+'</b>'+(t.def?' — '+esc(t.def):'');}).join('<br>')+'</p></div>':'')+
+          (((n.terms||[]).length)?'<div class="rsec"><h4>💡 용어</h4>'+n.terms.map(function(t){return '<div style="margin:3px 0"><b>'+esc(t.word)+'</b>'+(t.def?' — '+esc(t.def):'')+' <a class="btn sm" style="padding:1px 7px" target="_blank" rel="noreferrer" href="https://search.naver.com/search.naver?query='+encodeURIComponent(t.word)+'">🔍</a></div>';}).join('')+'</div>':'')+
           '<div class="acts">'+
             (n.url?'<a class="btn sm" href="'+esc(n.url)+'" target="_blank" rel="noreferrer">▶ 열기</a>':'')+
             '<button class="btn sm" data-copy="'+n.id+'">📋 복사</button>'+
@@ -386,6 +389,37 @@
   $('#search').addEventListener('input',function(){ filter.q=this.value; render(); });
   $('#sortSel').addEventListener('change',function(){ sortBy=this.value; render(); });
   $('#keyBtn').onclick=function(e){ e.preventDefault(); var cur=getKey(); var k=prompt('제미나이 API 키 (이 기기에만 저장 · 비우면 삭제):', cur||''); if(k!==null){ setKey(k.trim()); alert(k.trim()?'키 저장됨 ✓':'키 삭제됨'); } };
+
+  // 백업(내보내기) / 복원(가져오기)
+  $('#exportBtn').onclick=function(e){ e.preventDefault();
+    var data={ v:1, exportedAt:new Date().toISOString(), notes:notes, gloss:gloss };
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    var a=document.createElement('a'); var d=new Date();
+    var fn='미래노트_백업_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'.json';
+    a.href=URL.createObjectURL(blob); a.download=fn; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+    alert('백업 파일 저장됨 ✓\n다른 기기에서 "가져오기"로 복원하세요. (노트 '+notes.length+'개 · 용어 '+gloss.length+'개)');
+  };
+  $('#importBtn').onclick=function(e){ e.preventDefault(); $('#importFile').click(); };
+  $('#importFile').onchange=function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(){
+      try{ var d=JSON.parse(r.result);
+        var inN=Array.isArray(d.notes)?d.notes:[]; var inG=Array.isArray(d.gloss)?d.gloss:[];
+        var mode=confirm('가져오기 방식 선택:\n\n[확인] = 합치기(기존+백업, 중복 제외)\n[취소] = 교체(기존 전부 지우고 백업으로)');
+        if(mode){ // 합치기
+          var ids={}; notes.forEach(function(n){ids[n.id]=1;});
+          inN.forEach(function(n){ if(!n.id||!ids[n.id]){ if(!n.id)n.id=uid(); notes.push(n); } });
+          var gw={}; gloss.forEach(function(g){gw[g.word]=1;});
+          inG.forEach(function(g){ if(g.word&&!gw[g.word]) gloss.push(g); });
+        } else { notes=inN; gloss=inG; }
+        persist(); saveGloss(); render(); renderGloss();
+        alert('복원 완료 ✓ 노트 '+notes.length+'개 · 용어 '+gloss.length+'개');
+      }catch(err){ alert('파일을 읽을 수 없어요. 미래노트 백업 파일이 맞는지 확인하세요.'); }
+    };
+    r.readAsText(f); this.value='';
+  };
 
 
   // ===== 용어장(전역 누적) =====
@@ -410,7 +444,10 @@
     var L=$('#glist'); L.innerHTML='';
     if(arr.length===0){ L.innerHTML='<div class="empty">'+(gloss.length===0?'영상 정리 후 용어 ➕로 담아보세요':'검색 결과 없음')+'</div>'; return; }
     arr.forEach(function(g){ var el=document.createElement('div'); el.className='gitem';
-      el.innerHTML='<div><div class="gword">'+esc(g.word)+'</div>'+(g.def?'<div class="gdef">'+esc(g.def)+'</div>':'')+'</div><button class="btn sm" data-gdel="'+esc(g.word)+'">삭제</button>';
+      el.innerHTML='<div style="min-width:0"><div class="gword">'+esc(g.word)+'</div>'+(g.def?'<div class="gdef">'+esc(g.def)+'</div>':'')+
+        '<div style="margin-top:6px;display:flex;gap:6px"><a class="btn sm" target="_blank" rel="noreferrer" href="https://search.naver.com/search.naver?query='+encodeURIComponent(g.word)+'">🔍 검색</a>'+
+        '<a class="btn sm" target="_blank" rel="noreferrer" href="https://search.naver.com/search.naver?where=news&query='+encodeURIComponent(g.word)+'">📰 뉴스</a></div></div>'+
+        '<button class="btn sm" data-gdel="'+esc(g.word)+'">삭제</button>';
       el.querySelector('[data-gdel]').onclick=function(){ gloss=gloss.filter(function(x){return x.word!==g.word;}); saveGloss(); renderGloss(); };
       L.appendChild(el); }); }
   $('#gsearch').addEventListener('input',function(){ glossQ=this.value.toLowerCase(); renderGloss(); });
