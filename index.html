@@ -76,12 +76,21 @@
   .empty{ text-align:center; color:var(--sub); font-size:13px; padding:30px 0; }
   .foot{ text-align:center; font-size:11px; color:var(--sub); margin-top:16px; line-height:1.7; }
   .foot a{ color:var(--accent); font-weight:600; }
+  .tabs{ display:flex; gap:6px; margin-bottom:12px; }
+  .tabs button{ flex:1; border:1px solid var(--line); background:var(--card); color:var(--sub); border-radius:10px; padding:9px; font-size:14px; font-weight:700; cursor:pointer; }
+  .tabs button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .termchip{ display:inline-flex; align-items:center; gap:4px; border:1px solid var(--accent-bd); background:var(--accent-bg); color:var(--accent); border-radius:999px; padding:4px 10px; font-size:12px; cursor:pointer; }
+  .termchip.saved{ opacity:.5; }
+  .tdef{ font-size:11px; color:var(--sub); margin:2px 0 6px 2px; }
+  .gword{ font-weight:700; } .gdef{ color:var(--sub); font-size:13px; }
+  .gitem{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>미래노트</h1>
   <p class="lead">영상·자료를 담으면 AI가 분류·요약·인사이트·적용안으로 정리. 지금 보고, 미래에 적용.</p>
+  <div class="tabs"><button id="tabNotes" class="on">📝 노트</button><button id="tabGloss">📚 용어장</button></div>
 
   <button id="openAdd" class="btn primary block" style="margin-bottom:8px">+ 새 노트 추가</button>
   <div style="font-size:11px;color:var(--sub);margin:-2px 0 12px;text-align:center">💡 유튜브에서 <b>공유 → 미래노트</b> 하면 링크가 자동으로 들어와요 (홈 화면 추가 후)</div>
@@ -107,6 +116,7 @@
     <div class="field"><label>인사이트</label><textarea id="n_insight" placeholder="얻은 인사이트"></textarea></div>
     <div class="field"><label>실제 적용안 (액션)</label><textarea id="n_action" placeholder="이렇게 적용"></textarea></div>
     <div class="field"><label>📜 전체 내용 (AI 상세본)</label><textarea id="n_full" placeholder="AI가 영상 전체를 풀어서 정리" style="min-height:140px"></textarea></div>
+    <div class="field" id="termPickWrap" style="display:none"><label>💡 기억할 용어 (➕ 누르면 용어장에 누적)</label><div class="chips" id="termPick"></div></div>
     <div class="field"><label>적용 상태</label>
       <div class="seg" id="statusPick">
         <button data-s="apply" class="apply">🟢 적용</button>
@@ -138,7 +148,14 @@
     <span class="count" id="count" style="margin:0"></span>
   </div>
 
+  <div id="notesView">
   <div id="list"></div>
+  </div>
+  <div id="glossView" style="display:none">
+    <div class="field"><input id="gsearch" type="text" placeholder="🔎 용어 검색" /></div>
+    <div class="count" id="gcount"></div>
+    <div id="glist"></div>
+  </div>
 
   <div class="foot">데이터·AI키는 이 브라우저에만 저장돼요. 기기 바꾸면 안 넘어가니 중요한 건 따로 백업.<br><a href="#" id="keyBtn">🔑 AI 키 설정/변경</a></div>
 </div>
@@ -193,10 +210,11 @@
     if(note){ editingId=note.id;
       $('#n_url').value=note.url||''; $('#n_title').value=note.title||'';
       $('#n_summary').value=note.summary||''; $('#n_insight').value=note.insight||''; $('#n_action').value=note.action||''; $('#n_full').value=note.full||'';
-      pick={cats:(note.cats||[]).slice(), importance:note.importance||0, status:note.status||'review', thumb:note.thumb||''};
+      pick={cats:(note.cats||[]).slice(), importance:note.importance||0, status:note.status||'review', thumb:note.thumb||'', terms:(note.terms||[]).slice()};
       if(note.thumb){ $('#n_thumb').src=note.thumb; $('#n_thumb').style.display=''; } else { $('#n_thumb').style.display='none'; }
     } else { editingId=null; $('#n_url').value=''; $('#n_title').value=''; $('#n_summary').value=''; $('#n_insight').value=''; $('#n_action').value=''; $('#n_full').value='';
-      pick={cats:[], importance:0, status:'review', thumb:''}; $('#n_thumb').style.display='none'; }
+      pick={cats:[], importance:0, status:'review', thumb:'', terms:[]}; $('#n_thumb').style.display='none'; }
+    renderTermPick();
     $('#fetchMsg').textContent=''; $('#aiMsg').textContent=''; renderCatPick(); renderStars();
     [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); });
     window.scrollTo({top:0,behavior:'smooth'});
@@ -214,19 +232,39 @@
     if(!K){ $('#aiMsg').textContent='AI 키가 필요해요 (아래 🔑 AI 키 설정).'; return; }
     $('#aiBtn').disabled=true; $('#aiMsg').textContent='AI가 영상 읽고 정리 중… (10~40초)';
     var vid=ytId(url); if(vid){ pick.thumb='https://img.youtube.com/vi/'+vid+'/hqdefault.jpg'; $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; }
+    var apiUrl = vid ? ('https://www.youtube.com/watch?v='+vid) : url;  // 추가 파라미터 제거(MIME 오류 방지)
     var promptText='너는 영상 정리 도우미다. 아래 영상을 보고 JSON으로만 답하라(설명·마크다운·코드펜스 금지).\n사용자 맥락: '+MY_CONTEXT
       +'\n문체 규칙: 모든 텍스트는 개조식(명사형 종결)으로 짧고 핵심만. "~습니다/~이다/~합니다" 금지. 예) "총자산 대비 손실액 통제". 핵심 공식·수치가 있으면 반드시 포함(예: 최대 손실액 = 총자산 × 1%).'
       +'\n카테고리는 반드시 다음 중에서 1~2개만 고른다: '+CATS.join(', ')
-      +'\n형식: {"title":"간결한 제목","categories":["위 목록 중 1~2개"],"importance":2,"summary":["핵심 요점 3~4개, 개조식 한 줄씩"],"insight":"핵심 인사이트, 개조식 2~3줄(줄바꿈)","action":"실제 적용 액션, 개조식 2~3개(줄바꿈)","full":"영상 전체 내용을 흐름대로 상세히 정리(개조식 불릿, 줄바꿈으로 구분, 수식/수치 포함)","status":"apply 또는 review 또는 ref 중 추천"}';
+      +'\n형식: {"title":"간결한 제목","categories":["위 목록 중 1~2개"],"importance":2,"summary":["핵심 요점 3~4개, 개조식 한 줄씩"],"insight":"핵심 인사이트, 개조식 2~3줄(줄바꿈)","action":"실제 적용 액션, 개조식 2~3개(줄바꿈)","full":"영상 전체를 흐름대로 구조화. 【소제목】 뒤에 개조식 불릿(- 로 시작) 여러 줄. 소제목은 【도입】【핵심 논리】【방법·공식】【사례】【결론】 등 내용에 맞게. 수식·수치 포함. 줄바꿈으로 구분","terms":[{"word":"핵심 용어","def":"짧은 정의"}],"status":"apply 또는 review 또는 ref 중 추천"}';
     try{
-      var body=JSON.stringify({ contents:[{parts:[{text:promptText},{file_data:{file_uri:url}}]}] });
+      var body=JSON.stringify({ contents:[{parts:[{text:promptText},{file_data:{file_uri:apiUrl}}]}] });
+      function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
       var j=null, lastErr='';
+      outer:
       for(var i=0;i<GEMINI_MODELS.length;i++){
-        $('#aiMsg').textContent='AI 정리 중… ('+GEMINI_MODELS[i]+')';
-        var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODELS[i]+':generateContent?key='+encodeURIComponent(K),{method:'POST',headers:{'Content-Type':'application/json'},body:body});
-        var jj=await res.json();
-        if(jj.error){ lastErr=jj.error.message||''; if(/not found|no longer|not supported|does not|404|NOT_FOUND|unsupported/i.test(lastErr)) continue; j=jj; break; }
-        j=jj; break;
+        for(var attempt=0; attempt<3; attempt++){
+          $('#aiMsg').textContent='AI 정리 중… ('+GEMINI_MODELS[i]+(attempt?(' 재시도'+attempt):'')+')';
+          var raw='', status=0, jj=null;
+          try{
+            var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODELS[i]+':generateContent?key='+encodeURIComponent(K),{method:'POST',headers:{'Content-Type':'application/json'},body:body});
+            status=res.status; raw=await res.text();
+          }catch(ne){ lastErr=(ne&&ne.message)||'network'; await sleep(1500); continue; }
+          // 응답이 JSON인지 먼저 확인 (HTML 에러 페이지 방어)
+          try{ jj=JSON.parse(raw); }catch(pe){ jj=null; }
+          if(!jj){ // JSON 아님 = 서버 과부하/오류 페이지 → 재시도 후 다음 모델
+            lastErr='서버 혼잡(비정상 응답 '+status+')'; await sleep(1500);
+            if(attempt>=2) continue outer; else continue;
+          }
+          if(jj.error){ lastErr=jj.error.message||('HTTP '+status);
+            if(/not found|no longer|does not exist|404|NOT_FOUND|permission|PERMISSION/i.test(lastErr)) continue outer;   // 모델없음/권한 → 다음 모델
+            if(/high demand|overload|503|500|UNAVAILABLE|try again|rate|quota|429|RESOURCE_EXHAUSTED|internal/i.test(lastErr)){ await sleep(1500); if(attempt>=2) continue outer; else continue; } // 과부하 → 재시도→다음모델
+            if(/invalid|API key/i.test(lastErr)){ break outer; } // 키 문제는 멈춤(표시)
+            if(/unsupported mime|mime type|not supported/i.test(lastErr)){ lastErr='이 영상은 AI가 못 읽어요(비공개·자막없음·형식). 다른 영상으로.'; break outer; }
+            await sleep(1200); if(attempt>=2) continue outer; else continue; // 기타 → 재시도
+          }
+          j=jj; break outer; // 성공
+        }
       }
       if(!j || j.error){ $('#aiMsg').textContent='오류: '+(lastErr||(j&&j.error&&j.error.message)||'키/권한 확인'); $('#aiBtn').disabled=false; return; }
       var txt=(j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts||[]).map(function(p){return p.text||'';}).join('');
@@ -240,6 +278,7 @@
       if(o.insight) $('#n_insight').value=o.insight;
       if(o.action) $('#n_action').value=Array.isArray(o.action)?o.action.join('\n'):o.action;
       if(o.full) $('#n_full').value=Array.isArray(o.full)?o.full.join('\n'):o.full;
+      pick.terms=Array.isArray(o.terms)?o.terms.filter(function(t){return t&&t.word;}):[]; renderTermPick();
       if(typeof o.importance==='number'){ pick.importance=Math.max(0,Math.min(3,Math.round(o.importance))); renderStars(); }
       if(Array.isArray(o.categories)){ o.categories.forEach(function(c){ if(CATS.indexOf(c)>=0 && pick.cats.indexOf(c)<0) pick.cats.push(c); }); renderCatPick(); }
       if(o.status && ['apply','review','ref'].indexOf(o.status)>=0){ pick.status=o.status; [].forEach.call($('#statusPick').children,function(x){x.classList.toggle('on',x.dataset.s===pick.status);}); }
@@ -264,7 +303,7 @@
     var title=$('#n_title').value.trim();
     if(!title){ $('#aiMsg').textContent='제목은 꼭 입력해주세요.'; $('#n_title').focus(); return; }
     var data={ url:$('#n_url').value.trim(), title:title, thumb:pick.thumb, cats:pick.cats.slice(), importance:pick.importance, status:pick.status,
-      summary:$('#n_summary').value.trim(), insight:$('#n_insight').value.trim(), action:$('#n_action').value.trim(), full:$('#n_full').value.trim() };
+      summary:$('#n_summary').value.trim(), insight:$('#n_insight').value.trim(), action:$('#n_action').value.trim(), full:$('#n_full').value.trim(), terms:(pick.terms||[]) };
     if(editingId){ var n=notes.find(function(x){return x.id===editingId;}); if(n) Object.assign(n,data);
     } else { data.id=uid(); data.createdAt=Date.now(); data.views=0; notes.unshift(data); }
     persist(); closeForm(); render();
@@ -272,7 +311,7 @@
   function del(id){ if(!confirm('이 노트를 삭제할까요?')) return; notes=notes.filter(function(x){return x.id!==id;}); persist(); render(); }
 
   var STLABEL={apply:'적용',review:'적용 검토',ref:'참고'};
-  function fullHtml(t){ return esc(t).replace(/\n/g,'<br>'); }
+  function fullHtml(t){ return esc(t).replace(/【([^】]+)】/g,'<b style="color:var(--accent)">【$1】</b>').replace(/\n/g,'<br>'); }
   function copyNote(n){
     var lines=[];
     lines.push('【'+(n.title||'')+'】');
@@ -281,6 +320,7 @@
     if(n.insight){ lines.push('\n[인사이트]'); lines.push(n.insight); }
     if(n.action){ lines.push('\n[적용 액션]'); lines.push(n.action); }
     if(n.full){ lines.push('\n[전체 내용]'); lines.push(n.full); }
+    if((n.terms||[]).length){ lines.push('\n[용어]'); n.terms.forEach(function(t){ lines.push('- '+t.word+(t.def?': '+t.def:'')); }); }
     if(n.url){ lines.push('\n'+n.url); }
     var txt=lines.join('\n');
     try{ navigator.clipboard.writeText(txt).then(function(){ alert('복사됐어요 ✓ 원하는 곳에 붙여넣기'); },function(){ prompt('아래를 길게 눌러 복사하세요', txt); }); }
@@ -325,6 +365,7 @@
           (n.insight?'<div class="rsec"><h4>💡 인사이트</h4><p>'+esc(n.insight)+'</p></div>':'')+
           (n.action?'<div class="rsec"><h4>🎯 실제 적용 액션</h4><p>'+esc(n.action)+'</p></div>':'')+
           (n.full?'<div class="rsec"><h4>📜 전체 내용</h4><p>'+fullHtml(n.full)+'</p></div>':'')+
+          (((n.terms||[]).length)?'<div class="rsec"><h4>💡 용어</h4><p>'+n.terms.map(function(t){return '<b>'+esc(t.word)+'</b>'+(t.def?' — '+esc(t.def):'');}).join('<br>')+'</p></div>':'')+
           '<div class="acts">'+
             (n.url?'<a class="btn sm" href="'+esc(n.url)+'" target="_blank" rel="noreferrer">▶ 열기</a>':'')+
             '<button class="btn sm" data-copy="'+n.id+'">📋 복사</button>'+
@@ -346,6 +387,49 @@
   $('#sortSel').addEventListener('change',function(){ sortBy=this.value; render(); });
   $('#keyBtn').onclick=function(e){ e.preventDefault(); var cur=getKey(); var k=prompt('제미나이 API 키 (이 기기에만 저장 · 비우면 삭제):', cur||''); if(k!==null){ setKey(k.trim()); alert(k.trim()?'키 저장됨 ✓':'키 삭제됨'); } };
 
+
+  // ===== 용어장(전역 누적) =====
+  var GKEY='miraenote:gloss:v1';
+  var gloss=[];
+  function loadGloss(){ try{ gloss=JSON.parse(localStorage.getItem(GKEY)||'[]'); }catch(e){ gloss=[]; } }
+  function saveGloss(){ try{ localStorage.setItem(GKEY, JSON.stringify(gloss)); }catch(e){} }
+  function addTerm(word,def){ word=(word||'').trim(); if(!word) return false;
+    if(gloss.some(function(g){return g.word===word;})) return 'dup';
+    gloss.unshift({word:word, def:(def||'').trim(), t:Date.now()}); saveGloss(); return true; }
+  function renderTermPick(){ var wrap=$('#termPickWrap'), box=$('#termPick'); box.innerHTML='';
+    var ts=pick.terms||[]; if(!ts.length){ wrap.style.display='none'; return; } wrap.style.display='';
+    ts.forEach(function(t){ var el=document.createElement('span'); el.className='termchip';
+      var saved=gloss.some(function(g){return g.word===t.word;}); if(saved) el.className+=' saved';
+      el.innerHTML='➕ '+esc(t.word); el.title=t.def||'';
+      el.onclick=function(){ var r=addTerm(t.word,t.def); el.className='termchip saved'; el.innerHTML='✓ '+esc(t.word); };
+      box.appendChild(el); }); }
+  var glossQ='';
+  function renderGloss(){
+    var arr=gloss.filter(function(g){ if(!glossQ) return true; var b=(g.word+' '+(g.def||'')).toLowerCase(); return b.indexOf(glossQ)>=0; });
+    $('#gcount').textContent='용어 '+gloss.length+'개'+(glossQ?(' · 검색 '+arr.length):'');
+    var L=$('#glist'); L.innerHTML='';
+    if(arr.length===0){ L.innerHTML='<div class="empty">'+(gloss.length===0?'영상 정리 후 용어 ➕로 담아보세요':'검색 결과 없음')+'</div>'; return; }
+    arr.forEach(function(g){ var el=document.createElement('div'); el.className='gitem';
+      el.innerHTML='<div><div class="gword">'+esc(g.word)+'</div>'+(g.def?'<div class="gdef">'+esc(g.def)+'</div>':'')+'</div><button class="btn sm" data-gdel="'+esc(g.word)+'">삭제</button>';
+      el.querySelector('[data-gdel]').onclick=function(){ gloss=gloss.filter(function(x){return x.word!==g.word;}); saveGloss(); renderGloss(); };
+      L.appendChild(el); }); }
+  $('#gsearch').addEventListener('input',function(){ glossQ=this.value.toLowerCase(); renderGloss(); });
+
+  // 탭 전환
+  function showTab(which){
+    var notes=which==='notes';
+    $('#tabNotes').classList.toggle('on',notes); $('#tabGloss').classList.toggle('on',!notes);
+    $('#notesView').style.display=notes?'':'none';
+    $('#glossView').style.display=notes?'none':'';
+    // 노트 전용 컨트롤(검색·필터·정렬·추가버튼)도 같이 숨김
+    ['#openAdd','#search','#statusFilter','#catFilter'].forEach(function(id){ var e=$(id); if(e) e.style.display=notes?'':'none'; });
+    var tb=document.querySelector('.toolbar'); if(tb) tb.style.display=notes?'':'none';
+    var hint=document.querySelector('.lead+.tabs'); // noop
+    if(!notes){ $('#form').style.display='none'; renderGloss(); }
+  }
+  $('#tabNotes').onclick=function(){ showTab('notes'); };
+  $('#tabGloss').onclick=function(){ showTab('gloss'); };
+
   // 유튜브 공유 자동 처리
   function handleShare(){ var p=new URLSearchParams(location.search); var url=p.get('url')||'', text=p.get('text')||'', title=p.get('title')||'';
     if(!url && text){ var mm=text.match(/https?:\/\/[^\s]+/); if(mm) url=mm[0]; }
@@ -353,7 +437,7 @@
     if(title && !/https?:\/\//.test(title)) $('#n_title').value=title;
     try{ history.replaceState(null,'',location.pathname); }catch(e){} $('#fetchBtn').click(); }
 
-  load(); renderCatFilter(); render(); handleShare();
+  load(); loadGloss(); renderCatFilter(); render(); handleShare();
 })();
 </script>
 </body>
