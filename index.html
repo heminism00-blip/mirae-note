@@ -491,17 +491,22 @@
     var arr=scraps.filter(function(sc){ if(!scrapQ) return true; return (sc.text+' '+(sc.title||'')).toLowerCase().indexOf(scrapQ)>=0; });
     $('#scount').textContent='스크랩 '+scraps.length+'개'+(scrapQ?(' · 검색 '+arr.length):'');
     if(arr.length===0){ L.innerHTML='<div class="empty">'+(scraps.length===0?'카드에서 ☆로 문장을 담아보세요':'검색 결과 없음')+'</div>'; return; }
-    var groups={}; arr.forEach(function(sc){ var c=sc.cat||'기타'; (groups[c]=groups[c]||[]).push(sc); });
+    function effCat(sc){ if(sc.catManual) return sc.catManual; var nt=notes.find(function(x){return x.id===sc.noteId;}); if(nt && (nt.cats||[]).length) return nt.cats[0]; return sc.cat||'기타'; }
+    var groups={}; arr.forEach(function(sc){ var c=effCat(sc); (groups[c]=groups[c]||[]).push(sc); });
     var order=CATS.filter(function(c){return groups[c];}); Object.keys(groups).forEach(function(c){ if(order.indexOf(c)<0) order.push(c); });
     order.forEach(function(c){
       var h=document.createElement('div'); h.innerHTML='<div style="font-weight:800;color:'+cColor(c)+';margin:14px 2px 6px;font-size:14px">'+esc(c)+' ('+groups[c].length+')</div>'; L.appendChild(h);
       groups[c].forEach(function(sc){
         var sh=(sc.title||'').slice(0,12)+((sc.title||'').length>12?'…':'');
+        var curCat=effCat(sc);
+        var opts=CATS.map(function(cc){return '<option value="'+esc(cc)+'"'+(cc===curCat?' selected':'')+'>'+esc(cc)+'</option>';}).join('');
         var el=document.createElement('div'); el.className='gitem';
         el.innerHTML='<div style="min-width:0"><div style="font-size:14px;line-height:1.65">'+esc(sc.text)+'</div>'+
-          '<div style="margin-top:6px;font-size:11px;color:var(--sub)">📹 '+esc(sh||'출처')+(sc.url?' · <a target="_blank" rel="noreferrer" href="'+esc(sc.url)+'">▶ 영상</a>':'')+'</div></div>'+
+          '<div style="margin-top:6px;font-size:11px;color:var(--sub)">📹 '+esc(sh||'출처')+(sc.url?' · <a target="_blank" rel="noreferrer" href="'+esc(sc.url)+'">▶ 영상</a>':'')+'</div>'+
+          '<div style="margin-top:6px"><select class="scat" data-scat="'+sc.id+'" style="width:auto;padding:4px 8px;font-size:12px">'+opts+'</select></div></div>'+
           '<button class="btn sm" data-sdel="'+sc.id+'">삭제</button>';
         el.querySelector('[data-sdel]').onclick=function(){ scraps=scraps.filter(function(x){return x.id!==sc.id;}); saveScrap(); renderScrap(); };
+        el.querySelector('[data-scat]').onchange=function(){ var t=this.value; var it=scraps.find(function(x){return x.id===sc.id;}); if(it){ it.catManual=t; saveScrap(); renderScrap(); } };
         L.appendChild(el);
       });
     });
