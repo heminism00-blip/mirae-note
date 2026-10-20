@@ -71,7 +71,8 @@
   .rsec li{ margin:6px 0; font-size:14px; line-height:1.65; padding-left:16px; position:relative; }
   .rsec li:before{ content:'•'; color:var(--accent); position:absolute; left:2px; font-weight:700; }
   .rsec p{ margin:0; font-size:14px; line-height:1.7; white-space:pre-wrap; }
-  .rline{ display:flex; gap:7px; align-items:flex-start; margin:6px 0; font-size:14px; line-height:1.65; }
+  .rline{ display:flex; gap:7px; align-items:flex-start; margin:6px 0; font-size:14px; line-height:1.65; cursor:pointer; }
+  .rline:active{ opacity:.6; }
   .rline .rtxt{ flex:1; min-width:0; }
   .rline .pin{ flex:0 0 auto; cursor:pointer; color:#cbd5e1; font-size:19px; line-height:1.3; user-select:none; padding:0 2px; transition:color .15s; }
   .rline .pin.on{ color:#f59e0b; }
@@ -182,16 +183,16 @@
 (function(){
   // ── 설정 (키는 저장소에 안 넣음! 앱 첫 사용 시 폰에만 저장) ──
   const GEMINI_MODELS=["gemini-3.8-flash","gemini-3.5-flash","gemini-flash-latest"];
-  const MY_CONTEXT="사용자는 투자(주식·재테크)와 건강·미용·요리·여행 등 실생활 콘텐츠 영상을 저장한다. 투자 영상이면 개인 투자자 관점(분산·장기·리스크)에서, 그 외는 실생활에 바로 적용하는 관점에서 인사이트와 액션을 제시.";
+  const MY_CONTEXT="사용자는 투자와 건강·미용·요리·여행 등 실생활 콘텐츠 영상을 저장한다. 카테고리 선택 시 투자 영상은 내용에 맞게 ISA/연금/주식(국내)/주식(미장)/ETF·펀드/예금·채권/부동산/절세·세금 중에서 구체적으로 고른다. 투자 영상이면 개인 투자자 관점(분산·장기·리스크), 그 외는 실생활 적용 관점에서 인사이트와 액션을 제시.";
   var GK='miraenote:gk';
   function getKey(){ try{ return localStorage.getItem(GK)||''; }catch(e){ return ''; } }
   function setKey(k){ try{ if(k) localStorage.setItem(GK,k); else localStorage.removeItem(GK); }catch(e){} }
   // ─────────────────────────────────────────────────────────
 
   var $=function(s){return document.querySelector(s);};
-  var CATS=['주식','재테크','건강(다이어트)','건강(운동)','건강(음식)','미용(홈케어)','미용(시술)','미용(메이크업)','패션뷰티','트렌드','요리','여행','기타'];
-  var CATCOLOR={ '주식':'#2563eb','재테크':'#0ea5e9','건강(다이어트)':'#16a34a','건강(운동)':'#15803d','건강(음식)':'#65a30d',
-    '미용(홈케어)':'#db2777','미용(시술)':'#be185d','미용(메이크업)':'#e11d48','패션뷰티':'#7c3aed','트렌드':'#d97706','요리':'#ea580c','여행':'#0d9488','기타':'#71717a' };
+  var CATS=['ISA','연금','주식(국내)','주식(미장)','ETF/펀드','예금/채권','부동산','절세/세금','건강(다이어트)','건강(운동)','건강(음식)','미용(홈케어)','미용(시술)','미용(메이크업)','패션뷰티','트렌드','요리','여행','기타'];
+  var CATCOLOR={ 'ISA':'#1d4ed8','연금':'#2563eb','주식(국내)':'#3b82f6','주식(미장)':'#0ea5e9','ETF/펀드':'#0891b2','예금/채권':'#0e7490','부동산':'#7c3aed','절세/세금':'#6d28d9',
+    '건강(다이어트)':'#16a34a','건강(운동)':'#15803d','건강(음식)':'#65a30d','미용(홈케어)':'#db2777','미용(시술)':'#be185d','미용(메이크업)':'#e11d48','패션뷰티':'#9333ea','트렌드':'#d97706','요리':'#ea580c','여행':'#0d9488','기타':'#71717a' };
   function cColor(c){ return CATCOLOR[c]||'#71717a'; }
   var KEY='miraenote:v1';
   var notes=[], editingId=null, filter={status:'all',cat:'all',q:''}, sortBy='recent';
@@ -371,7 +372,7 @@
       var pins=[]; var cat0=(n.cats&&n.cats[0])||'기타';
       function pinRow(text){ text=(text||'').replace(/^[-•·\s]+/,'').trim(); if(!text) return '';
         var idx=pins.length; pins.push({text:text,cat:cat0,noteId:n.id,url:n.url||'',title:n.title||''});
-        var on=scrapHas({text:text,noteId:n.id}); return '<div class="rline'+(on?' pinned':'')+'"><span class="pin'+(on?' on':'')+'" data-pin="'+idx+'">'+(on?'★':'☆')+'</span><span class="rtxt">'+esc(text)+'</span></div>'; }
+        var on=scrapHas({text:text,noteId:n.id}); return '<div class="rline'+(on?' pinned':'')+'" data-pin="'+idx+'"><span class="pin'+(on?' on':'')+'">'+(on?'★':'☆')+'</span><span class="rtxt">'+esc(text)+'</span></div>'; }
       function sec(title,inner){ return inner?('<div class="rsec"><h4>'+title+'</h4>'+inner+'</div>'):''; }
       var sumRows=(n.summary||'').split('\n').map(pinRow).join('');
       var insRows=(n.insight||'').split('\n').map(pinRow).join('');
@@ -392,7 +393,7 @@
           sec('🎯 실제 적용 액션', actRows)+
           sec('📜 전체 내용', fullRows)+
           (((n.terms||[]).length)?'<div class="rsec"><h4>💡 용어</h4>'+n.terms.map(function(t){return '<div style="margin:4px 0"><b>'+esc(t.word)+'</b>'+(t.def?' — '+esc(t.def):'')+' <a class="btn sm" style="padding:1px 7px" target="_blank" rel="noreferrer" href="https://search.naver.com/search.naver?query='+encodeURIComponent(t.word)+'">🔍</a></div>';}).join('')+'</div>':'')+
-          '<div style="font-size:11px;color:var(--sub);margin:-2px 2px 8px">☆ 줄 옆 별 = 스크랩에 담기 · ★ 담김 (다시 누르면 해제)</div>'+
+          '<div style="font-size:11px;color:var(--sub);margin:-2px 2px 8px">문장을 탭하면 ★ 스크랩에 담겨요 (다시 탭하면 해제)</div>'+
           '<div class="acts">'+
             (n.url?'<a class="btn sm" href="'+esc(n.url)+'" target="_blank" rel="noreferrer">▶ 열기</a>':'')+
             '<button class="btn sm" data-copy="'+n.id+'">📋 복사</button>'+
@@ -404,7 +405,7 @@
       el.querySelector('[data-del="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); del(n.id); };
       el.querySelector('[data-edit="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); openForm(n); };
       var cp=el.querySelector('[data-copy="'+n.id+'"]'); if(cp) cp.onclick=function(e){ e.stopPropagation(); copyNote(n); };
-      el.querySelectorAll('.pin').forEach(function(p){ p.onclick=function(e){ e.stopPropagation(); var r=scrapToggle(pins[+p.dataset.pin]); var isOn=(r==='on'); p.className='pin'+(isOn?' on':''); p.textContent=isOn?'★':'☆'; var row=p.closest('.rline'); if(row) row.classList.toggle('pinned',isOn); }; });
+      el.querySelectorAll('.rline[data-pin]').forEach(function(row){ row.onclick=function(e){ e.stopPropagation(); var r=scrapToggle(pins[+row.dataset.pin]); var isOn=(r==='on'); row.classList.toggle('pinned',isOn); var p=row.querySelector('.pin'); if(p){ p.className='pin'+(isOn?' on':''); p.textContent=isOn?'★':'☆'; } }; });
       L.appendChild(el);
     });
   }
