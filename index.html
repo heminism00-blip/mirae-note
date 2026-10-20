@@ -65,10 +65,17 @@
   .tag{ font-size:11px; border-radius:5px; padding:1px 7px; border:1px solid; font-weight:600; }
   /* 리포트 상세 */
   .det{ border-top:1px solid var(--line); padding:12px; background:var(--soft); }
-  .rsec{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
-  .rsec h4{ margin:0 0 5px; font-size:12px; font-weight:800; color:var(--accent); }
-  .rsec ul{ margin:0; padding-left:17px; } .rsec li{ margin:3px 0; font-size:13.5px; line-height:1.55; }
-  .rsec p{ margin:0; font-size:13.5px; line-height:1.6; white-space:pre-wrap; }
+  .rsec{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 13px; margin-bottom:10px; }
+  .rsec h4{ margin:0 0 8px; font-size:13px; font-weight:800; color:var(--accent); padding-bottom:6px; border-bottom:1px solid var(--line); }
+  .rsec ul{ margin:0; padding:0; list-style:none; }
+  .rsec li{ margin:6px 0; font-size:14px; line-height:1.65; padding-left:16px; position:relative; }
+  .rsec li:before{ content:'•'; color:var(--accent); position:absolute; left:2px; font-weight:700; }
+  .rsec p{ margin:0; font-size:14px; line-height:1.7; white-space:pre-wrap; }
+  .rline{ display:flex; gap:7px; align-items:flex-start; margin:6px 0; font-size:14px; line-height:1.65; }
+  .rline .rtxt{ flex:1; min-width:0; }
+  .rline .pin{ flex:0 0 auto; cursor:pointer; color:#cbd5e1; font-size:14px; user-select:none; padding:0 2px; }
+  .rline .pin.on{ color:#f59e0b; }
+  .fhead{ font-weight:800; color:var(--accent); display:block; margin:12px 0 4px; font-size:13.5px; }
   .acts{ display:flex; gap:8px; margin-top:4px; }
   .toolbar{ display:flex; gap:8px; align-items:center; margin:6px 0 4px; }
   .toolbar select{ flex:0 0 auto; width:auto; padding:7px 10px; font-size:13px; }
@@ -90,7 +97,7 @@
 <div class="wrap">
   <h1>미래노트</h1>
   <p class="lead">영상·자료를 담으면 AI가 분류·요약·인사이트·적용안으로 정리. 지금 보고, 미래에 적용.</p>
-  <div class="tabs"><button id="tabNotes" class="on">📝 노트</button><button id="tabGloss">📚 용어장</button></div>
+  <div class="tabs"><button id="tabNotes" class="on">📝 노트</button><button id="tabScrap">📌 스크랩</button><button id="tabGloss">📚 용어장</button></div>
 
   <button id="openAdd" class="btn primary block" style="margin-bottom:8px">+ 새 노트 추가</button>
   <div style="font-size:11px;color:var(--sub);margin:-2px 0 12px;text-align:center">💡 유튜브에서 <b>공유 → 미래노트</b> 하면 링크가 자동으로 들어와요 (홈 화면 추가 후)</div>
@@ -155,6 +162,12 @@
     <div class="field"><input id="gsearch" type="text" placeholder="🔎 용어 검색" /></div>
     <div class="count" id="gcount"></div>
     <div id="glist"></div>
+  </div>
+  <div id="scrapView" style="display:none">
+    <div style="font-size:12px;color:var(--sub);margin-bottom:8px">카드 펼쳐서 줄 옆 📌 누르면 그 문장이 여기 분야별로 모여요.</div>
+    <div class="field"><input id="ssearch" type="text" placeholder="🔎 스크랩 검색" /></div>
+    <div class="count" id="scount"></div>
+    <div id="slist"></div>
   </div>
 
   <div class="foot">데이터·AI키는 이 브라우저에만 저장돼요. 기기 바꾸면 안 넘어가니 백업으로 옮기세요.<br>
@@ -353,8 +366,16 @@
       var stars=''; for(var i=1;i<=3;i++) stars+=(i<=(n.importance||0)?'★':'');
       var tags=(n.cats||[]).map(function(c){ var col=cColor(c); return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+esc(c)+'</span>'; }).join('');
       var thumb=n.thumb?('<img class="thumb sm" src="'+esc(n.thumb)+'" onerror="this.style.display=\'none\'">'):'';
-      var sumItems=(n.summary||'').split('\n').map(function(x){return x.replace(/^[-•·\s]+/,'').trim();}).filter(Boolean);
-      var sumHtml=sumItems.length?('<ul>'+sumItems.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'):'';
+      var pins=[]; var cat0=(n.cats&&n.cats[0])||'기타';
+      function pinRow(text){ text=(text||'').replace(/^[-•·\s]+/,'').trim(); if(!text) return '';
+        var idx=pins.length; pins.push({text:text,cat:cat0,noteId:n.id,url:n.url||'',title:n.title||''});
+        return '<div class="rline"><span class="pin" data-pin="'+idx+'">📌</span><span class="rtxt">'+esc(text)+'</span></div>'; }
+      function sec(title,inner){ return inner?('<div class="rsec"><h4>'+title+'</h4>'+inner+'</div>'):''; }
+      var sumRows=(n.summary||'').split('\n').map(pinRow).join('');
+      var insRows=(n.insight||'').split('\n').map(pinRow).join('');
+      var actRows=(n.action||'').split('\n').map(pinRow).join('');
+      var fullRows=''; (n.full||'').split('\n').forEach(function(ln){ ln=ln.trim(); if(!ln) return;
+        var hm=ln.match(/^【(.+)】$/); if(hm){ fullRows+='<span class="fhead">【'+esc(hm[1])+'】</span>'; } else { fullRows+=pinRow(ln); } });
       el.innerHTML=
         '<div class="note-top">'+thumb+
           '<div class="note-body">'+
@@ -364,11 +385,12 @@
           '</div>'+
         '</div>'+
         '<div class="det" style="display:none">'+
-          (sumHtml?'<div class="rsec"><h4>📌 핵심 요점</h4>'+sumHtml+'</div>':'')+
-          (n.insight?'<div class="rsec"><h4>💡 인사이트</h4><p>'+esc(n.insight)+'</p></div>':'')+
-          (n.action?'<div class="rsec"><h4>🎯 실제 적용 액션</h4><p>'+esc(n.action)+'</p></div>':'')+
-          (n.full?'<div class="rsec"><h4>📜 전체 내용</h4><p>'+fullHtml(n.full)+'</p></div>':'')+
-          (((n.terms||[]).length)?'<div class="rsec"><h4>💡 용어</h4>'+n.terms.map(function(t){return '<div style="margin:3px 0"><b>'+esc(t.word)+'</b>'+(t.def?' — '+esc(t.def):'')+' <a class="btn sm" style="padding:1px 7px" target="_blank" rel="noreferrer" href="https://search.naver.com/search.naver?query='+encodeURIComponent(t.word)+'">🔍</a></div>';}).join('')+'</div>':'')+
+          sec('📌 핵심 요점', sumRows)+
+          sec('💡 인사이트', insRows)+
+          sec('🎯 실제 적용 액션', actRows)+
+          sec('📜 전체 내용', fullRows)+
+          (((n.terms||[]).length)?'<div class="rsec"><h4>💡 용어</h4>'+n.terms.map(function(t){return '<div style="margin:4px 0"><b>'+esc(t.word)+'</b>'+(t.def?' — '+esc(t.def):'')+' <a class="btn sm" style="padding:1px 7px" target="_blank" rel="noreferrer" href="https://search.naver.com/search.naver?query='+encodeURIComponent(t.word)+'">🔍</a></div>';}).join('')+'</div>':'')+
+          '<div style="font-size:11px;color:var(--sub);margin:-2px 2px 8px">💡 줄 옆 📌 = 스크랩에 담기</div>'+
           '<div class="acts">'+
             (n.url?'<a class="btn sm" href="'+esc(n.url)+'" target="_blank" rel="noreferrer">▶ 열기</a>':'')+
             '<button class="btn sm" data-copy="'+n.id+'">📋 복사</button>'+
@@ -380,6 +402,7 @@
       el.querySelector('[data-del="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); del(n.id); };
       el.querySelector('[data-edit="'+n.id+'"]').onclick=function(e){ e.stopPropagation(); openForm(n); };
       var cp=el.querySelector('[data-copy="'+n.id+'"]'); if(cp) cp.onclick=function(e){ e.stopPropagation(); copyNote(n); };
+      el.querySelectorAll('.pin').forEach(function(p){ p.onclick=function(e){ e.stopPropagation(); var r=scrapAdd(pins[+p.dataset.pin]); p.textContent='✓'; p.className='pin on'; }; });
       L.appendChild(el);
     });
   }
@@ -452,19 +475,49 @@
       L.appendChild(el); }); }
   $('#gsearch').addEventListener('input',function(){ glossQ=this.value.toLowerCase(); renderGloss(); });
 
-  // 탭 전환
+  // ===== 스크랩(줄 단위 발췌, 전역) =====
+  var SKEY='miraenote:scrap:v1'; var scraps=[]; var scrapQ='';
+  function loadScrap(){ try{ scraps=JSON.parse(localStorage.getItem(SKEY)||'[]'); }catch(e){ scraps=[]; } }
+  function saveScrap(){ try{ localStorage.setItem(SKEY, JSON.stringify(scraps)); }catch(e){} }
+  function scrapAdd(d){ if(!d||!d.text) return false;
+    if(scraps.some(function(x){return x.text===d.text && x.noteId===d.noteId;})) return 'dup';
+    scraps.unshift({id:uid(),text:d.text,cat:d.cat||'기타',noteId:d.noteId,url:d.url||'',title:d.title||'',t:Date.now()}); saveScrap(); return true; }
+  function renderScrap(){
+    var L=$('#slist'); L.innerHTML='';
+    var arr=scraps.filter(function(sc){ if(!scrapQ) return true; return (sc.text+' '+(sc.title||'')).toLowerCase().indexOf(scrapQ)>=0; });
+    $('#scount').textContent='스크랩 '+scraps.length+'개'+(scrapQ?(' · 검색 '+arr.length):'');
+    if(arr.length===0){ L.innerHTML='<div class="empty">'+(scraps.length===0?'카드에서 📌로 문장을 담아보세요':'검색 결과 없음')+'</div>'; return; }
+    var groups={}; arr.forEach(function(sc){ var c=sc.cat||'기타'; (groups[c]=groups[c]||[]).push(sc); });
+    var order=CATS.filter(function(c){return groups[c];}); Object.keys(groups).forEach(function(c){ if(order.indexOf(c)<0) order.push(c); });
+    order.forEach(function(c){
+      var h=document.createElement('div'); h.innerHTML='<div style="font-weight:800;color:'+cColor(c)+';margin:14px 2px 6px;font-size:14px">'+esc(c)+' ('+groups[c].length+')</div>'; L.appendChild(h);
+      groups[c].forEach(function(sc){
+        var sh=(sc.title||'').slice(0,12)+((sc.title||'').length>12?'…':'');
+        var el=document.createElement('div'); el.className='gitem';
+        el.innerHTML='<div style="min-width:0"><div style="font-size:14px;line-height:1.65">'+esc(sc.text)+'</div>'+
+          '<div style="margin-top:6px;font-size:11px;color:var(--sub)">📹 '+esc(sh||'출처')+(sc.url?' · <a target="_blank" rel="noreferrer" href="'+esc(sc.url)+'">▶ 영상</a>':'')+'</div></div>'+
+          '<button class="btn sm" data-sdel="'+sc.id+'">삭제</button>';
+        el.querySelector('[data-sdel]').onclick=function(){ scraps=scraps.filter(function(x){return x.id!==sc.id;}); saveScrap(); renderScrap(); };
+        L.appendChild(el);
+      });
+    });
+  }
+  $('#ssearch').addEventListener('input',function(){ scrapQ=this.value.toLowerCase(); renderScrap(); });
+
+  // 탭 전환 (노트/스크랩/용어장)
   function showTab(which){
-    var notes=which==='notes';
-    $('#tabNotes').classList.toggle('on',notes); $('#tabGloss').classList.toggle('on',!notes);
-    $('#notesView').style.display=notes?'':'none';
-    $('#glossView').style.display=notes?'none':'';
-    // 노트 전용 컨트롤(검색·필터·정렬·추가버튼)도 같이 숨김
-    ['#openAdd','#search','#statusFilter','#catFilter'].forEach(function(id){ var e=$(id); if(e) e.style.display=notes?'':'none'; });
-    var tb=document.querySelector('.toolbar'); if(tb) tb.style.display=notes?'':'none';
-    var hint=document.querySelector('.lead+.tabs'); // noop
-    if(!notes){ $('#form').style.display='none'; renderGloss(); }
+    var isN=which==='notes', isG=which==='gloss', isS=which==='scrap';
+    $('#tabNotes').classList.toggle('on',isN); $('#tabScrap').classList.toggle('on',isS); $('#tabGloss').classList.toggle('on',isG);
+    $('#notesView').style.display=isN?'':'none';
+    $('#scrapView').style.display=isS?'':'none';
+    $('#glossView').style.display=isG?'':'none';
+    ['#openAdd','#search','#statusFilter','#catFilter'].forEach(function(id){ var e=$(id); if(e) e.style.display=isN?'':'none'; });
+    var tb=document.querySelector('.toolbar'); if(tb) tb.style.display=isN?'':'none';
+    if(!isN){ $('#form').style.display='none'; }
+    if(isG) renderGloss(); if(isS) renderScrap();
   }
   $('#tabNotes').onclick=function(){ showTab('notes'); };
+  $('#tabScrap').onclick=function(){ showTab('scrap'); };
   $('#tabGloss').onclick=function(){ showTab('gloss'); };
 
   // 유튜브 공유 자동 처리
@@ -474,7 +527,7 @@
     if(title && !/https?:\/\//.test(title)) $('#n_title').value=title;
     try{ history.replaceState(null,'',location.pathname); }catch(e){} $('#fetchBtn').click(); }
 
-  load(); loadGloss(); renderCatFilter(); render(); handleShare();
+  load(); loadGloss(); loadScrap(); renderCatFilter(); render(); handleShare();
 })();
 </script>
 </body>
