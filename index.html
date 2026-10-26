@@ -208,7 +208,7 @@
     CATS.forEach(function(cat){ var on=pick.cats.indexOf(cat)>=0; var el=document.createElement('span');
       el.className='chip'; el.textContent=cat;
       if(on){ el.style.background=cColor(cat); el.style.color='#fff'; el.style.borderColor=cColor(cat); }
-      el.onclick=function(){ var i=pick.cats.indexOf(cat); if(i>=0)pick.cats.splice(i,1); else pick.cats.push(cat); renderCatPick(); };
+      el.onclick=function(){ var i=pick.cats.indexOf(cat); if(i>=0)pick.cats.splice(i,1); else pick.cats.push(cat); renderCatPick(); saveDraft(); };
       c.appendChild(el); }); }
   function renderCatFilter(){ var c=$('#catFilter'); c.innerHTML='';
     var all=document.createElement('span'); all.className='chip'; all.textContent='전체 분야';
@@ -222,7 +222,7 @@
     [].forEach.call(s.children,function(sp){ sp.className=(parseInt(sp.dataset.i)<=pick.importance)?'on':''; }); }
   $('#starPick').addEventListener('click',function(e){ if(e.target.dataset.i){ var v=parseInt(e.target.dataset.i); pick.importance=(pick.importance===v)?v-1:v; renderStars(); } });
   $('#statusPick').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b)return; pick.status=b.dataset.s;
-    [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); }); });
+    [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); }); saveDraft(); });
 
   function openForm(note){
     $('#form').style.display=''; $('#openAdd').style.display='none';
@@ -238,7 +238,22 @@
     [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); });
     window.scrollTo({top:0,behavior:'smooth'});
   }
-  function closeForm(){ $('#form').style.display='none'; $('#openAdd').style.display=''; editingId=null; }
+  var DRAFT='miraenote:draft:v1';
+  function formData(){ return { url:$('#n_url').value, title:$('#n_title').value, summary:$('#n_summary').value,
+    insight:$('#n_insight').value, action:$('#n_action').value, full:$('#n_full').value,
+    cats:(pick.cats||[]).slice(), importance:pick.importance||0, status:pick.status||'review', thumb:pick.thumb||'', terms:(pick.terms||[]).slice(), editingId:editingId, open:($('#form').style.display!=='none') }; }
+  function saveDraft(){ try{ var d=formData(); if(d.open && (d.url||d.title||d.summary||d.insight||d.action||d.full)) localStorage.setItem(DRAFT, JSON.stringify(d)); else localStorage.removeItem(DRAFT); }catch(e){} }
+  function clearDraft(){ try{ localStorage.removeItem(DRAFT); }catch(e){} }
+  function restoreDraft(){ try{ var d=JSON.parse(localStorage.getItem(DRAFT)||'null'); if(!d) return false;
+    $('#form').style.display=''; $('#openAdd').style.display='none'; editingId=d.editingId||null;
+    $('#n_url').value=d.url||''; $('#n_title').value=d.title||''; $('#n_summary').value=d.summary||''; $('#n_insight').value=d.insight||''; $('#n_action').value=d.action||''; $('#n_full').value=d.full||'';
+    pick={cats:(d.cats||[]).slice(), importance:d.importance||0, status:d.status||'review', thumb:d.thumb||'', terms:(d.terms||[]).slice()};
+    if(pick.thumb){ $('#n_thumb').src=pick.thumb; $('#n_thumb').style.display=''; } else { $('#n_thumb').style.display='none'; }
+    renderCatPick(); renderStars(); renderTermPick();
+    [].forEach.call($('#statusPick').children,function(x){ x.classList.toggle('on', x.dataset.s===pick.status); });
+    return true; }catch(e){ return false; } }
+  function closeForm(){ $('#form').style.display='none'; $('#openAdd').style.display=''; editingId=null; clearDraft(); }
+  ['#n_url','#n_title','#n_summary','#n_insight','#n_action','#n_full'].forEach(function(id){ var e=$(id); if(e) e.addEventListener('input', saveDraft); });
   $('#openAdd').onclick=function(){ openForm(null); };
   $('#cancelBtn').onclick=closeForm;
 
@@ -266,9 +281,10 @@
           $('#aiMsg').textContent='AI 정리 중… ('+GEMINI_MODELS[i]+(attempt?(' 재시도'+attempt):'')+')';
           var raw='', status=0, jj=null;
           try{
-            var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODELS[i]+':generateContent?key='+encodeURIComponent(K),{method:'POST',headers:{'Content-Type':'application/json'},body:body});
-            status=res.status; raw=await res.text();
-          }catch(ne){ lastErr=(ne&&ne.message)||'network'; await sleep(1500); continue; }
+            var ctrl=new AbortController(); var to=setTimeout(function(){ ctrl.abort(); }, 45000);
+            var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODELS[i]+':generateContent?key='+encodeURIComponent(K),{method:'POST',headers:{'Content-Type':'application/json'},body:body,signal:ctrl.signal});
+            clearTimeout(to); status=res.status; raw=await res.text();
+          }catch(ne){ lastErr=((ne&&ne.name==='AbortError')?'응답 지연(타임아웃)':((ne&&ne.message)||'network')); await sleep(800); if(attempt>=2) continue outer; else continue; }
           // 응답이 JSON인지 먼저 확인 (HTML 에러 페이지 방어)
           try{ jj=JSON.parse(raw); }catch(pe){ jj=null; }
           if(!jj){ // JSON 아님 = 서버 과부하/오류 페이지 → 재시도 후 다음 모델
@@ -285,7 +301,7 @@
           j=jj; break outer; // 성공
         }
       }
-      if(!j || j.error){ $('#aiMsg').textContent='오류: '+(lastErr||(j&&j.error&&j.error.message)||'키/권한 확인'); $('#aiBtn').disabled=false; return; }
+      if(!j || j.error){ var em=(lastErr||(j&&j.error&&j.error.message)||'키/권한 확인'); if(/fetch|network|타임아웃|지연|혼잡/.test(em)) em='AI 서버 지연/혼잡 또는 영상이 너무 깁니다. 잠시 후 다시, 또는 짧은 영상으로. (수동 입력도 가능)'; $('#aiMsg').textContent='실패: '+em; $('#aiBtn').disabled=false; return; }
       var txt=(j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts||[]).map(function(p){return p.text||'';}).join('');
       if(!txt){ var fr=j.candidates&&j.candidates[0]&&j.candidates[0].finishReason; $('#aiMsg').textContent='AI 응답 비어있음'+(fr?(' ('+fr+')'):'')+' — 다시 시도하거나 다른 영상'; $('#aiBtn').disabled=false; return; }
       var clean=txt.replace(/```json/gi,'').replace(/```/g,'');
@@ -301,7 +317,7 @@
       if(typeof o.importance==='number'){ pick.importance=Math.max(0,Math.min(3,Math.round(o.importance))); renderStars(); }
       if(Array.isArray(o.categories)){ o.categories.forEach(function(c){ if(CATS.indexOf(c)>=0 && pick.cats.indexOf(c)<0) pick.cats.push(c); }); renderCatPick(); }
       if(o.status && ['apply','review','ref'].indexOf(o.status)>=0){ pick.status=o.status; [].forEach.call($('#statusPick').children,function(x){x.classList.toggle('on',x.dataset.s===pick.status);}); }
-      $('#aiMsg').textContent='정리 완료 ✓ 내용 확인하고 저장하세요';
+      $('#aiMsg').textContent='정리 완료 ✓ 내용 확인하고 저장하세요'; saveDraft();
     }catch(e){ $('#aiMsg').textContent='실패: '+((e&&e.message)||e)+' — CORS/네트워크/영상 문제일 수 있어요'; }
     $('#aiBtn').disabled=false;
   };
@@ -325,7 +341,7 @@
       summary:$('#n_summary').value.trim(), insight:$('#n_insight').value.trim(), action:$('#n_action').value.trim(), full:$('#n_full').value.trim(), terms:(pick.terms||[]) };
     if(editingId){ var n=notes.find(function(x){return x.id===editingId;}); if(n) Object.assign(n,data);
     } else { data.id=uid(); data.createdAt=Date.now(); data.views=0; notes.unshift(data); }
-    persist(); closeForm(); render();
+    persist(); clearDraft(); closeForm(); render();
   };
   function del(id){ if(!confirm('이 노트를 삭제할까요?')) return; notes=notes.filter(function(x){return x.id!==id;}); persist(); render(); }
 
@@ -550,7 +566,7 @@
     $('#glossView').style.display=isG?'':'none';
     ['#openAdd','#search','#statusFilter','#catFilter'].forEach(function(id){ var e=$(id); if(e) e.style.display=isN?'':'none'; });
     var tb=document.querySelector('.toolbar'); if(tb) tb.style.display=isN?'':'none';
-    if(!isN){ $('#form').style.display='none'; }
+    if(!isN){ saveDraft(); $('#form').style.display='none'; } else { if(localStorage.getItem(DRAFT)) restoreDraft(); }
     if(isG) renderGloss(); if(isS) renderScrap();
   }
   $('#tabNotes').onclick=function(){ showTab('notes'); };
@@ -564,7 +580,7 @@
     if(title && !/https?:\/\//.test(title)) $('#n_title').value=title;
     try{ history.replaceState(null,'',location.pathname); }catch(e){} $('#fetchBtn').click(); }
 
-  load(); loadGloss(); loadScrap(); renderCatFilter(); render(); handleShare();
+  load(); loadGloss(); loadScrap(); renderCatFilter(); render(); if(!restoreDraft()) handleShare(); else handleShare();
 })();
 </script>
 </body>
