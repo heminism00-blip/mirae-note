@@ -182,7 +182,7 @@
 <script>
 (function(){
   // ── 설정 (키는 저장소에 안 넣음! 앱 첫 사용 시 폰에만 저장) ──
-  const GEMINI_MODELS=["gemini-3.8-flash","gemini-3.5-flash","gemini-flash-latest"];
+  const GEMINI_MODELS=["gemini-3.5-flash-lite","gemini-3.8-flash"];  // lite=하루 약 500회, 3.8=폴백
   const MY_CONTEXT="사용자는 투자와 건강·미용·요리·여행 등 실생활 콘텐츠 영상을 저장한다. 카테고리 선택 시 투자 영상은 내용에 맞게 ISA/연금/주식(국내)/주식(미장)/ETF·펀드/예금·채권/부동산/절세·세금 중에서 구체적으로 고른다. 투자 영상이면 개인 투자자 관점(분산·장기·리스크), 그 외는 실생활 적용 관점에서 인사이트와 액션을 제시.";
   var GK='miraenote:gk';
   function getKey(){ try{ return localStorage.getItem(GK)||''; }catch(e){ return ''; } }
@@ -242,7 +242,7 @@
   function formData(){ return { url:$('#n_url').value, title:$('#n_title').value, summary:$('#n_summary').value,
     insight:$('#n_insight').value, action:$('#n_action').value, full:$('#n_full').value,
     cats:(pick.cats||[]).slice(), importance:pick.importance||0, status:pick.status||'review', thumb:pick.thumb||'', terms:(pick.terms||[]).slice(), editingId:editingId, open:($('#form').style.display!=='none') }; }
-  function saveDraft(){ try{ var d=formData(); if(d.open && (d.url||d.title||d.summary||d.insight||d.action||d.full)) localStorage.setItem(DRAFT, JSON.stringify(d)); else localStorage.removeItem(DRAFT); }catch(e){} }
+  function saveDraft(){ try{ var d=formData(); if(d.open && (d.url||d.title||d.summary||d.insight||d.action||d.full)) localStorage.setItem(DRAFT, JSON.stringify(d)); }catch(e){} }
   function clearDraft(){ try{ localStorage.removeItem(DRAFT); }catch(e){} }
   function restoreDraft(){ try{ var d=JSON.parse(localStorage.getItem(DRAFT)||'null'); if(!d) return false;
     $('#form').style.display=''; $('#openAdd').style.display='none'; editingId=d.editingId||null;
@@ -274,36 +274,55 @@
     try{
       var body=JSON.stringify({ contents:[{parts:[{text:promptText},{file_data:{file_uri:apiUrl}}]}] });
       function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
-      var j=null, lastErr='';
+      // 스트리밍 호출(긴 영상 타임아웃/503 완화). 반환 {text} 또는 {error,status}
+      async function callGemini(model){
+        var ctrl=new AbortController(); var to=setTimeout(function(){ ctrl.abort(); }, 90000);
+        try{
+          var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':streamGenerateContent?alt=sse&key='+encodeURIComponent(K),
+            {method:'POST',headers:{'Content-Type':'application/json'},body:body,signal:ctrl.signal});
+          if(!res.ok){ var et=''; try{ et=await res.text(); }catch(e){} clearTimeout(to);
+            var ej=null; try{ ej=JSON.parse(et); }catch(e){}
+            return {error:(ej&&ej.error&&ej.error.message)||('HTTP '+res.status), status:res.status}; }
+          if(!res.body || !res.body.getReader){ clearTimeout(to); var tt=await res.text(); var tj=null; try{ tj=JSON.parse(tt); }catch(e){}
+            var f0=''; if(tj){ var c0=tj.candidates&&tj.candidates[0]; if(c0&&c0.content&&c0.content.parts) f0=c0.content.parts.map(function(x){return x.text||'';}).join(''); }
+            return {text:f0, status:res.status}; }
+          var reader=res.body.getReader(), dec=new TextDecoder(), buf='', full='';
+          while(true){ var rr=await reader.read(); if(rr.done) break;
+            buf+=dec.decode(rr.value,{stream:true});
+            var parts=buf.split('\n'); buf=parts.pop();
+            for(var pi=0;pi<parts.length;pi++){ var line=parts[pi].trim(); if(line.indexOf('data:')!==0) continue;
+              var data=line.slice(5).trim(); if(!data||data==='[DONE]') continue;
+              try{ var sj=JSON.parse(data);
+                if(sj.error){ clearTimeout(to); return {error:sj.error.message||'stream error', status:0}; }
+                var cnd=sj.candidates&&sj.candidates[0];
+                if(cnd&&cnd.content&&cnd.content.parts) full+=cnd.content.parts.map(function(x){return x.text||'';}).join('');
+              }catch(e){} }
+          }
+          clearTimeout(to); return {text:full, status:res.status};
+        }catch(ne){ clearTimeout(to); return {error:(ne&&ne.name==='AbortError')?'응답 지연(타임아웃)':((ne&&ne.message)||'network'), status:0}; }
+      }
+      var txt='', lastErr='';
       outer:
       for(var i=0;i<GEMINI_MODELS.length;i++){
-        for(var attempt=0; attempt<3; attempt++){
-          $('#aiMsg').textContent='AI 정리 중… ('+GEMINI_MODELS[i]+(attempt?(' 재시도'+attempt):'')+')';
-          var raw='', status=0, jj=null;
-          try{
-            var ctrl=new AbortController(); var to=setTimeout(function(){ ctrl.abort(); }, 45000);
-            var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODELS[i]+':generateContent?key='+encodeURIComponent(K),{method:'POST',headers:{'Content-Type':'application/json'},body:body,signal:ctrl.signal});
-            clearTimeout(to); status=res.status; raw=await res.text();
-          }catch(ne){ lastErr=((ne&&ne.name==='AbortError')?'응답 지연(타임아웃)':((ne&&ne.message)||'network')); await sleep(800); if(attempt>=2) continue outer; else continue; }
-          // 응답이 JSON인지 먼저 확인 (HTML 에러 페이지 방어)
-          try{ jj=JSON.parse(raw); }catch(pe){ jj=null; }
-          if(!jj){ // JSON 아님 = 서버 과부하/오류 페이지 → 재시도 후 다음 모델
-            lastErr='서버 혼잡(비정상 응답 '+status+')'; await sleep(1500);
-            if(attempt>=2) continue outer; else continue;
+        for(var attempt=0; attempt<2; attempt++){
+          $('#aiMsg').textContent='AI 정리 중… ('+GEMINI_MODELS[i]+(attempt?' 재시도':'')+')';
+          var r=await callGemini(GEMINI_MODELS[i]);
+          if(r.error){ lastErr=r.error;
+            if(/not found|no longer|does not exist|404|NOT_FOUND|permission|PERMISSION/i.test(lastErr)) continue outer;                 // 모델없음 → 다음 모델
+            if(/quota|429|RESOURCE_EXHAUSTED|limit/i.test(lastErr)){ lastErr='오늘 무료 한도 초과'; continue outer; }                    // 한도 → 재시도 없이 다음 모델
+            if(/invalid|API key/i.test(lastErr)){ break outer; }                                                                       // 키 문제 → 멈춤
+            if(/unsupported mime|mime type/i.test(lastErr)){ lastErr='이 영상은 AI가 못 읽어요(비공개·자막없음·형식).'; break outer; }
+            if(/high demand|overload|503|500|UNAVAILABLE|try again|internal|타임아웃|지연|network/i.test(lastErr)){ await sleep(1500); continue; }  // 과부하/타임아웃 → 1회 재시도
+            await sleep(1000); continue;
           }
-          if(jj.error){ lastErr=jj.error.message||('HTTP '+status);
-            if(/not found|no longer|does not exist|404|NOT_FOUND|permission|PERMISSION/i.test(lastErr)) continue outer;   // 모델없음/권한 → 다음 모델
-            if(/high demand|overload|503|500|UNAVAILABLE|try again|rate|quota|429|RESOURCE_EXHAUSTED|internal/i.test(lastErr)){ await sleep(1500); if(attempt>=2) continue outer; else continue; } // 과부하 → 재시도→다음모델
-            if(/invalid|API key/i.test(lastErr)){ break outer; } // 키 문제는 멈춤(표시)
-            if(/unsupported mime|mime type|not supported/i.test(lastErr)){ lastErr='이 영상은 AI가 못 읽어요(비공개·자막없음·형식). 다른 영상으로.'; break outer; }
-            await sleep(1200); if(attempt>=2) continue outer; else continue; // 기타 → 재시도
-          }
-          j=jj; break outer; // 성공
+          if(!r.text){ lastErr='AI 응답 비어있음'; await sleep(1000); continue; }
+          txt=r.text; break outer;  // 성공
         }
       }
-      if(!j || j.error){ var em=(lastErr||(j&&j.error&&j.error.message)||'키/권한 확인'); if(/fetch|network|타임아웃|지연|혼잡/.test(em)) em='AI 서버 지연/혼잡 또는 영상이 너무 깁니다. 잠시 후 다시, 또는 짧은 영상으로. (수동 입력도 가능)'; $('#aiMsg').textContent='실패: '+em; $('#aiBtn').disabled=false; return; }
-      var txt=(j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts||[]).map(function(p){return p.text||'';}).join('');
-      if(!txt){ var fr=j.candidates&&j.candidates[0]&&j.candidates[0].finishReason; $('#aiMsg').textContent='AI 응답 비어있음'+(fr?(' ('+fr+')'):'')+' — 다시 시도하거나 다른 영상'; $('#aiBtn').disabled=false; return; }
+      if(!txt){ var em=lastErr||'키/권한 확인';
+        if(/한도/.test(em)) em='오늘 무료 AI 한도를 다 쓴 것 같아요. 내일(태평양 자정 리셋) 다시 시도. 급하면 수동 입력.';
+        else if(/fetch|network|타임아웃|지연|혼잡|비어있음|503|UNAVAILABLE/.test(em)) em='AI 서버 지연/혼잡 또는 긴 영상. 잠시 후 다시 또는 짧은 영상. (수동 입력도 가능)';
+        $('#aiMsg').textContent='실패: '+em; $('#aiBtn').disabled=false; return; }
       var clean=txt.replace(/```json/gi,'').replace(/```/g,'');
       var m=clean.match(/\{[\s\S]*\}/);
       if(!m){ $('#aiMsg').textContent='JSON 해석 실패 — 다시 시도해보세요'; $('#aiBtn').disabled=false; return; }
@@ -566,7 +585,7 @@
     $('#glossView').style.display=isG?'':'none';
     ['#openAdd','#search','#statusFilter','#catFilter'].forEach(function(id){ var e=$(id); if(e) e.style.display=isN?'':'none'; });
     var tb=document.querySelector('.toolbar'); if(tb) tb.style.display=isN?'':'none';
-    if(!isN){ saveDraft(); $('#form').style.display='none'; } else { if(localStorage.getItem(DRAFT)) restoreDraft(); }
+    if(!isN){ if($('#form').style.display!=='none') saveDraft(); $('#form').style.display='none'; } else { if(localStorage.getItem(DRAFT)) restoreDraft(); }
     if(isG) renderGloss(); if(isS) renderScrap();
   }
   $('#tabNotes').onclick=function(){ showTab('notes'); };
@@ -580,7 +599,8 @@
     if(title && !/https?:\/\//.test(title)) $('#n_title').value=title;
     try{ history.replaceState(null,'',location.pathname); }catch(e){} $('#fetchBtn').click(); }
 
-  load(); loadGloss(); loadScrap(); renderCatFilter(); render(); if(!restoreDraft()) handleShare(); else handleShare();
+  load(); loadGloss(); loadScrap(); renderCatFilter(); render();
+  (function(){ var sp=new URLSearchParams(location.search); if(sp.get('url')||sp.get('text')) handleShare(); else restoreDraft(); })();
 })();
 </script>
 </body>
